@@ -1,12 +1,11 @@
 """
-SQLite Memory & Context Management Database for AI Companion App.
-Stores conversation history, user preferences, and personal memory snippets.
+SQLite Memory & User Authentication Database for AI Companion App.
+Handles Users (Login/Signup), Companion Personas, Chat History, and Memories.
 """
 
 import sqlite3
 import os
-import json
-from datetime import datetime
+from werkzeug.security import generate_password_hash, check_password_hash
 
 DB_PATH = os.path.join(os.path.dirname(__file__), "companion_memory.db")
 
@@ -18,25 +17,42 @@ def get_db():
 
 
 def init_db():
-    """Initializes tables for conversation history and user profile memory."""
+    """Initializes tables for users, chat history, and user profile memory."""
     conn = get_db()
     cursor = conn.cursor()
 
+    # 1. Users Table
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT UNIQUE NOT NULL,
+            password_hash TEXT NOT NULL,
+            display_name TEXT,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+
+    # 2. Chat History Table (with user_id and companion_id)
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS chat_history (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            session_id TEXT NOT NULL,
+            user_id INTEGER,
+            companion_id TEXT NOT NULL,
             role TEXT NOT NULL,
             content TEXT NOT NULL,
             timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
         )
     """)
 
+    # 3. User Memory Table (keyed per user and companion)
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS user_memory (
-            key TEXT PRIMARY KEY,
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER,
+            key TEXT NOT NULL,
             value TEXT NOT NULL,
-            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(user_id, key)
         )
     """)
 
@@ -44,65 +60,117 @@ def init_db():
     conn.close()
 
 
-def save_message(session_id: str, role: str, content: str):
-    """Saves a single message to history."""
+# --- AUTHENTICATION HELPERS ---
+
+def register_user(username: str, password: str, display_name: str = None) -> dict:
+    """Registers a new user."""
+    username = username.strip().lower()
+    if not username or not password:
+        return {"success": False, "error": "Username and password required"}
+
+    password_hash = generate_password_hash(password)
+    display_name = display_name or username.capitalize()
+
+    conn = get_db()
+    cursor = conn.cursor()
+    try:
+        cursor.execute(
+            "INSERT INTO users (username, password_hash, display_name) VALUES (?, ?, ?)",
+            (username, password_hash, display_name)
+        )
+        conn.commit()
+        user_id = cursor.lastrowid
+        conn.close()
+        return {
+            "success": True,
+            "user": {"id": user_id, "username": username, "display_name": display_name}
+        }
+    except sqlite3.IntegrityError:
+        conn.close()
+        return {"success": False, "error": "Username already exists. Please login."}
+
+
+def authenticate_user(username: str, password: str) -> dict:
+    """Authenticates a user by username and password."""
+    username = username.strip().lower()
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT id, username, password_hash, display_name FROM users WHERE username = ?", (username,))
+    user = cursor.fetchone()
+    conn.close()
+
+    if user and check_password_hash(user["password_hash"], password):
+        return {
+            "success": True,
+            "user": {
+                "id": user["id"],
+                "username": user["username"],
+                "display_name": user["display_name"]
+            }
+        }
+    return {"success": False, "error": "Invalid username or password"}
+
+
+# --- CHAT & MEMORY HELPERS ---
+
+def save_message(user_id: int, companion_id: str, role: str, content: str):
+    """Saves a message bound to a user and companion."""
     conn = get_db()
     cursor = conn.cursor()
     cursor.execute(
-        "INSERT INTO chat_history (session_id, role, content) VALUES (?, ?, ?)",
-        (session_id, role, content)
+        "INSERT INTO chat_history (user_id, companion_id, role, content) VALUES (?, ?, ?, ?)",
+        (user_id, companion_id, role, content)
     )
     conn.commit()
     conn.close()
 
 
-def get_recent_history(session_id: str, limit: int = 12):
-    """Retrieves recent conversation history for prompt context."""
+def get_recent_history(user_id: int, companion_id: str, limit: int = 14):
+    """Retrieves recent chat history for a specific user and companion."""
     conn = get_db()
     cursor = conn.cursor()
     cursor.execute(
-        "SELECT role, content FROM chat_history WHERE session_id = ? ORDER BY id DESC LIMIT ?",
-        (session_id, limit)
+        """SELECT role, content FROM chat_history 
+           WHERE (user_id = ? OR user_id IS NULL) AND companion_id = ? 
+           ORDER BY id DESC LIMIT ?""",
+        (user_id, companion_id, limit)
     )
     rows = cursor.fetchall()
     conn.close()
 
-    # Return in chronological order
-    history = [{"role": row["role"], "content": row["content"]} for row in reversed(rows)]
-    return history
+    return [{"role": row["role"], "content": row["content"]} for row in reversed(rows)]
 
 
-def clear_history(session_id: str):
-    """Clears history for a session."""
+def clear_history(user_id: int, companion_id: str):
+    """Clears history for a specific user and companion."""
     conn = get_db()
     cursor = conn.cursor()
-    cursor.execute("DELETE FROM chat_history WHERE session_id = ?", (session_id,))
+    cursor.execute("DELETE FROM chat_history WHERE (user_id = ? OR user_id IS NULL) AND companion_id = ?", (user_id, companion_id))
     conn.commit()
     conn.close()
 
 
-def set_memory_fact(key: str, value: str):
-    """Sets a remembered fact about the user."""
+def set_memory_fact(user_id: int, key: str, value: str):
+    """Stores a remembered fact for a user."""
     conn = get_db()
     cursor = conn.cursor()
     cursor.execute("""
-        INSERT INTO user_memory (key, value, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)
-        ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = CURRENT_TIMESTAMP
-    """, (key, value))
+        INSERT INTO user_memory (user_id, key, value, updated_at) VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+        ON CONFLICT(user_id, key) DO UPDATE SET value = excluded.value, updated_at = CURRENT_TIMESTAMP
+    """, (user_id, key, value))
     conn.commit()
     conn.close()
 
 
-def get_all_memories():
-    """Gets all stored memories about the user."""
+def get_all_memories(user_id: int):
+    """Retrieves remembered facts for a user."""
     conn = get_db()
     cursor = conn.cursor()
-    cursor.execute("SELECT key, value FROM user_memory")
+    cursor.execute("SELECT key, value FROM user_memory WHERE user_id = ?", (user_id,))
     rows = cursor.fetchall()
     conn.close()
-
     return {row["key"]: row["value"] for row in rows}
 
 
-# Auto-initialize DB on import
+# Auto-init DB
 init_db()
