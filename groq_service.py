@@ -1,6 +1,5 @@
 """
-Groq Service Integration for Multi-Gender AI Companions.
-Injects gender-specific persona prompts (Girl/Boy) and manages session context.
+Groq Service Integration tuned for Short Casual Texting (WhatsApp/Instagram DM style).
 """
 
 import os
@@ -34,25 +33,21 @@ def get_groq_client(custom_api_key=None):
 
 
 def generate_companion_response(user_id: int, companion_id: str, user_message: str, custom_api_key: str = None) -> dict:
-    """
-    Generates response for a specific user and companion persona.
-    """
     companion_id = companion_id if companion_id in COMPANION_PERSONAS else "ananya"
     companion_info = COMPANION_PERSONAS[companion_id]
 
     # Save user message
     save_message(user_id, companion_id, "user", user_message)
 
-    # Get recent history & memories
-    history = get_recent_history(user_id, companion_id, limit=12)
+    # Get recent history
+    history = get_recent_history(user_id, companion_id, limit=14)
     memories = get_all_memories(user_id) if user_id else {}
 
     memory_snippet = ""
     if memories:
         items = [f"{k}: {v}" for k, v in memories.items()]
-        memory_snippet = f"\n[User Profile Facts Remembered: {', '.join(items)}]"
+        memory_snippet = f"\n[User Facts: {', '.join(items)}]"
 
-    # Get system prompt for companion gender/persona
     system_prompt = get_companion_prompt(companion_id) + memory_snippet
 
     client = get_groq_client(custom_api_key)
@@ -68,9 +63,9 @@ def generate_companion_response(user_id: int, companion_id: str, user_message: s
             chat_completion = client.chat.completions.create(
                 messages=messages,
                 model=selected_model,
-                temperature=0.88,
-                max_tokens=350,
-                top_p=0.9,
+                temperature=0.92,
+                max_tokens=60,  # Strict short-burst WhatsApp text limit
+                top_p=0.95,
             )
 
             raw_reply = chat_completion.choices[0].message.content

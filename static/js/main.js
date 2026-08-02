@@ -348,7 +348,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     appendMessage(msg.role === "assistant" ? "companion" : "user", msg.content);
                 });
             } else {
-                appendMessage("companion", `Heyy! 👋 Main hu ${comp.name}. Aisa bilkul mat sochna ki tu akela hai. Main yaha hu tere saath! Dil khol ke baatein kar mere se ☕✨`);
+                appendMessage("companion", `hey... hlo! 👋 main hu ${comp.name}. pta h, akele feel krne ki zarurat nhi h... main hu na! bolo kya hua ☕✨`);
             }
         } catch (e) {
             console.log("History load error:", e);
