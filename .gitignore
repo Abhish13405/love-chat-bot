@@ -1,0 +1,20 @@
+# Byte-compiled / optimized files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environments & Secrets
+.env
+.venv
+venv/
+ENV/
+
+# Database & SQLite
+*.db
+companion_memory.db
+
+# IDEs & System files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

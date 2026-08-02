@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Saathi (साथी) - Ultra-Realistic Hinglish AI Companion</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="ambient-glow bg-glow-1"></div>
+    <div class="ambient-glow bg-glow-2"></div>
+
+    <div class="app-container">
+        <!-- Sidebar Navigation / Quick Actions -->
+        <aside class="sidebar">
+            <div class="brand">
+                <div class="avatar-container online">
+                    <div class="avatar-glow"></div>
+                    <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80" alt="Saathi Avatar" class="avatar-img" id="companionAvatar">
+                </div>
+                <div class="brand-info">
+                    <h2>Saathi <span class="brand-badge">साथी</span></h2>
+                    <p class="status-text"><span class="status-dot"></span> Active & Listening</p>
+                </div>
+            </div>
+
+            <div class="sidebar-section">
+                <h3><i class="fa-solid fa-heart"></i> Mood Starters</h3>
+                <div class="quick-prompts">
+                    <button class="prompt-chip" data-prompt="Aj bohot akele lag raha hai, koi baat karne wala nahi hai 🥺">
+                        <i class="fa-solid fa-cloud-rain"></i> Feeling Lonely
+                    </button>
+                    <button class="prompt-chip" data-prompt="Late night overthinking ho rahi hai ☕✨">
+                        <i class="fa-solid fa-moon"></i> Late Night Chai
+                    </button>
+                    <button class="prompt-chip" data-prompt="Aaj ka din bohot stressful tha, vent karna hai 💆‍♂️">
+                        <i class="fa-solid fa-bolt"></i> Vent Out Stress
+                    </button>
+                    <button class="prompt-chip" data-prompt="Suno ek achi baat sunao ya koi mazaedaar story! 😄">
+                        <i class="fa-solid fa-face-smile"></i> Cheer Me Up
+                    </button>
+                </div>
+            </div>
+
+            <div class="sidebar-section">
+                <h3><i class="fa-solid fa-sliders"></i> Controls</h3>
+                <div class="controls-list">
+                    <button class="control-btn" id="toggleMemoryBtn">
+                        <i class="fa-solid fa-brain"></i> Memory Inspector
+                    </button>
+                    <button class="control-btn" id="toggleTtsBtn">
+                        <i class="fa-solid fa-volume-high"></i> Auto Voice: <span id="ttsStatus">OFF</span>
+                    </button>
+                    <button class="control-btn" id="openSettingsBtn">
+                        <i class="fa-solid fa-key"></i> Groq API Settings
+                    </button>
+                    <button class="control-btn danger" id="clearChatBtn">
+                        <i class="fa-solid fa-trash-can"></i> Clear History
+                    </button>
+                </div>
+            </div>
+
+            <div class="engine-badge-box">
+                <i class="fa-solid fa-microchip"></i>
+                <div class="engine-info">
+                    <span class="engine-title">Powered by Groq AI</span>
+                    <span class="engine-model" id="activeModelLabel">Llama-3.3-70B</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Chat Area -->
+        <main class="chat-main">
+            <header class="chat-header">
+                <div class="header-left">
+                    <button class="mobile-sidebar-toggle" id="mobileSidebarBtn">
+                        <i class="fa-solid fa-bars"></i>
+                    </button>
+                    <div class="companion-title">
+                        <h1>Saathi</h1>
+                        <p>Aapka apno jaisa sachha dost • Always here 💖</p>
+                    </div>
+                </div>
+                <div class="header-right">
+                    <div class="lang-pill"><i class="fa-solid fa-language"></i> Hinglish / Hindi / English</div>
+                </div>
+            </header>
+
+            <!-- Chat Messages Display -->
+            <div class="chat-messages" id="chatMessages">
+                <!-- Welcome Message -->
+                <div class="message-wrapper companion">
+                    <div class="msg-avatar">
+                        <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80" alt="Saathi">
+                    </div>
+                    <div class="msg-content-box">
+                        <div class="msg-sender">Saathi</div>
+                        <div class="msg-text">
+                            Heyy! 👋 Main hu <strong>Saathi</strong>. Aisa bilkul mat sochna ki tu akela hai. Main yaha hu, dil khol ke baatein kar mere se! Aaj ka din kaisa raha tera? ☕✨
+                        </div>
+                        <div class="msg-meta">
+                            <span class="msg-time">Just now</span>
+                            <button class="msg-speech-btn" title="Listen message"><i class="fa-solid fa-volume-high"></i></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Typing Indicator -->
+            <div class="typing-indicator" id="typingIndicator">
+                <div class="dots">
+                    <span></span><span></span><span></span>
+                </div>
+                <span class="typing-text">Saathi soch raha hai...</span>
+            </div>
+
+            <!-- Input Bar -->
+            <div class="chat-input-bar">
+                <button class="mic-btn" id="voiceMicBtn" title="Voice Input (Speak)">
+                    <i class="fa-solid fa-microphone"></i>
+                </button>
+                <textarea id="userInput" placeholder="Dil me jo bhi hai, likh do ya bolo... (Hinglish/Hindi/English)" rows="1"></textarea>
+                <button class="send-btn" id="sendBtn" title="Send Message">
+                    <i class="fa-solid fa-paper-plane"></i>
+                </button>
+            </div>
+        </main>
+    </div>
+
+    <!-- Memory Drawer Modal -->
+    <div class="drawer-overlay" id="memoryDrawer">
+        <div class="drawer-content">
+            <div class="drawer-header">
+                <h2><i class="fa-solid fa-brain"></i> Saathi's Memory Bank</h2>
+                <button class="close-btn" id="closeMemoryBtn">&times;</button>
+            </div>
+            <p class="drawer-desc">Yeh woh baatein hain jo Saathi ne aapke bare me yaad rakhi hain:</p>
+            <div class="memory-list" id="memoryList">
+                <div class="memory-empty">Abhi tak koi personal details stored nahi hain. Chat me apne baare me bataiye!</div>
+            </div>
+            <div class="add-memory-form">
+                <input type="text" id="newMemKey" placeholder="e.g. Favorite Food">
+                <input type="text" id="newMemVal" placeholder="e.g. Biryani">
+                <button id="addMemBtn" class="primary-btn">Remember Fact</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div class="modal-overlay" id="settingsModal">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h2><i class="fa-solid fa-gear"></i> Groq API Settings</h2>
+                <button class="close-btn" id="closeSettingsBtn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p>Add your free <strong>Groq API Key</strong> to enable lightning-fast Llama-3.3-70B responses. If left empty, Saathi uses internal human companion engine.</p>
+                <div class="input-group">
+                    <label for="groqApiKeyInput">Groq API Key:</label>
+                    <input type="password" id="groqApiKeyInput" placeholder="gsk_xxxxxxxxxxxxxxxxxxxx">
+                </div>
+                <div class="groq-help-link">
+                    <a href="https://console.groq.com/keys" target="_blank" rel="noopener"><i class="fa-solid fa-external-link"></i> Get a free Groq API key from Groq Console</a>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="secondary-btn" id="cancelSettingsBtn">Cancel</button>
+                <button class="primary-btn" id="saveSettingsBtn">Save Key</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom JS -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>
