@@ -1,5 +1,6 @@
 """
 Groq Service Integration with Integrated NLP Emotion & Entity Analysis.
+Includes connection timeout protection to prevent ERR_CONNECTION_RESET.
 """
 
 import os
@@ -27,7 +28,7 @@ def get_groq_client(custom_api_key=None):
     api_key = custom_api_key or os.getenv("GROQ_API_KEY")
     if GROQ_AVAILABLE and api_key and api_key.strip():
         try:
-            return Groq(api_key=api_key.strip())
+            return Groq(api_key=api_key.strip(), timeout=10.0)
         except Exception:
             return None
     return None
@@ -37,22 +38,35 @@ def generate_companion_response(user_id: int, companion_id: str, user_message: s
     companion_id = companion_id if companion_id in COMPANION_PERSONAS else "ananya"
     companion_info = COMPANION_PERSONAS[companion_id]
 
-    # 1. NLP Entity Extraction (NER): Auto-extract facts like Name, Food, City
-    extracted_fact = extract_user_entities(user_message)
-    if extracted_fact and user_id:
-        fact_key, fact_val = extracted_fact
-        set_memory_fact(user_id, fact_key, fact_val)
+    # 1. NLP Entity Extraction (NER)
+    try:
+        extracted_fact = extract_user_entities(user_message)
+        if extracted_fact and user_id:
+            fact_key, fact_val = extracted_fact
+            set_memory_fact(user_id, fact_key, fact_val)
+    except Exception as e:
+        print(f"NER extraction notice: {e}")
 
     # 2. NLP Sentiment Analysis
-    emotions = analyze_user_sentiment(user_message)
-    dominant_emotion = max(emotions, key=emotions.get) if any(emotions.values()) else "neutral"
+    try:
+        emotions = analyze_user_sentiment(user_message)
+        dominant_emotion = max(emotions, key=emotions.get) if any(emotions.values()) else "neutral"
+    except Exception:
+        dominant_emotion = "neutral"
 
     # Save user message
-    save_message(user_id, companion_id, "user", user_message)
+    try:
+        save_message(user_id, companion_id, "user", user_message)
+    except Exception as e:
+        print(f"Save message notice: {e}")
 
     # 3. Get recent history & memories
-    history = get_recent_history(user_id, companion_id, limit=14)
-    memories = get_all_memories(user_id) if user_id else {}
+    try:
+        history = get_recent_history(user_id, companion_id, limit=14)
+        memories = get_all_memories(user_id) if user_id else {}
+    except Exception:
+        history = []
+        memories = {}
 
     memory_snippet = ""
     if memories:
@@ -84,7 +98,10 @@ def generate_companion_response(user_id: int, companion_id: str, user_message: s
             raw_reply = chat_completion.choices[0].message.content
             cleaned_reply = clean_bot_cliches(raw_reply)
 
-            save_message(user_id, companion_id, "assistant", cleaned_reply)
+            try:
+                save_message(user_id, companion_id, "assistant", cleaned_reply)
+            except Exception:
+                pass
 
             return {
                 "response": cleaned_reply,
@@ -101,7 +118,10 @@ def generate_companion_response(user_id: int, companion_id: str, user_message: s
     fallback_pool = FALLBACK_RESPONSES_GENDER.get(gender, FALLBACK_RESPONSES_GENDER["female"])
     reply = random.choice(fallback_pool)
 
-    save_message(user_id, companion_id, "assistant", reply)
+    try:
+        save_message(user_id, companion_id, "assistant", reply)
+    except Exception:
+        pass
 
     return {
         "response": reply,
