@@ -1,15 +1,14 @@
 """
-Groq Service Integration with Integrated NLP Emotion & Entity Analysis.
-Includes connection timeout protection to prevent ERR_CONNECTION_RESET.
+Groq Service Integration with Integrated NLP Emotion & Entity Analysis
+and Smart Context-Aware Fallback Engine.
 """
 
 import os
-import random
 from dotenv import load_dotenv
 from persona_dataset import (
     COMPANION_PERSONAS,
     get_companion_prompt,
-    FALLBACK_RESPONSES_GENDER,
+    get_smart_fallback_reply,
     clean_bot_cliches
 )
 from memory_db import get_recent_history, get_all_memories, save_message, set_memory_fact
@@ -29,7 +28,8 @@ def get_groq_client(custom_api_key=None):
     if GROQ_AVAILABLE and api_key and api_key.strip():
         try:
             return Groq(api_key=api_key.strip(), timeout=10.0)
-        except Exception:
+        except Exception as e:
+            print(f"Groq Init Warning: {e}")
             return None
     return None
 
@@ -73,7 +73,7 @@ def generate_companion_response(user_id: int, companion_id: str, user_message: s
         items = [f"{k}: {v}" for k, v in memories.items()]
         memory_snippet = f"\n[User Facts Remembered: {', '.join(items)}]"
 
-    nlp_snippet = f"\n[NLP Emotion Context: User detected dominant emotion is '{dominant_emotion}']"
+    nlp_snippet = f"\n[NLP Emotion Context: User dominant emotion is '{dominant_emotion}']"
 
     system_prompt = get_companion_prompt(companion_id) + memory_snippet + nlp_snippet
 
@@ -90,9 +90,9 @@ def generate_companion_response(user_id: int, companion_id: str, user_message: s
             chat_completion = client.chat.completions.create(
                 messages=messages,
                 model=selected_model,
-                temperature=0.92,
-                max_tokens=80,
-                top_p=0.95,
+                temperature=0.75,
+                max_tokens=100,
+                top_p=0.9,
             )
 
             raw_reply = chat_completion.choices[0].message.content
@@ -111,12 +111,11 @@ def generate_companion_response(user_id: int, companion_id: str, user_message: s
             }
 
         except Exception as e:
-            print(f"Groq API call warning: {e}")
+            print(f"Groq API call execution warning: {e}")
 
-    # Fallback execution
+    # Smart Context-Aware Fallback
     gender = companion_info["gender"]
-    fallback_pool = FALLBACK_RESPONSES_GENDER.get(gender, FALLBACK_RESPONSES_GENDER["female"])
-    reply = random.choice(fallback_pool)
+    reply = get_smart_fallback_reply(user_message, gender)
 
     try:
         save_message(user_id, companion_id, "assistant", reply)
@@ -126,6 +125,6 @@ def generate_companion_response(user_id: int, companion_id: str, user_message: s
     return {
         "response": reply,
         "source": "fallback",
-        "model": f"{companion_info['name']} Engine",
+        "model": f"{companion_info['name']} Smart Engine",
         "emotion": dominant_emotion
     }

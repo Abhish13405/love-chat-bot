@@ -1,7 +1,7 @@
 """
 SQLite Memory & User Authentication Database for AI Companion App.
 Handles Users (Login/Signup), Companion Personas, Chat History, and Memories.
-Includes automatic schema migration for user_id and companion_id.
+Includes robust schema compatibility for session_id, user_id, and companion_id.
 """
 
 import sqlite3
@@ -12,7 +12,7 @@ DB_PATH = os.path.join(os.path.dirname(__file__), "companion_memory.db")
 
 
 def get_db():
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_PATH, timeout=10.0)
     conn.row_factory = sqlite3.Row
     return conn
 
@@ -37,6 +37,7 @@ def init_db():
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS chat_history (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
+            session_id TEXT DEFAULT 'default_session',
             user_id INTEGER,
             companion_id TEXT DEFAULT 'ananya',
             role TEXT NOT NULL,
@@ -53,6 +54,8 @@ def init_db():
         cursor.execute("ALTER TABLE chat_history ADD COLUMN user_id INTEGER")
     if "companion_id" not in columns:
         cursor.execute("ALTER TABLE chat_history ADD COLUMN companion_id TEXT DEFAULT 'ananya'")
+    if "session_id" not in columns:
+        cursor.execute("ALTER TABLE chat_history ADD COLUMN session_id TEXT DEFAULT 'default_session'")
 
     # 3. User Memory Table
     cursor.execute("""
@@ -125,8 +128,8 @@ def save_message(user_id: int, companion_id: str, role: str, content: str):
     conn = get_db()
     cursor = conn.cursor()
     cursor.execute(
-        "INSERT INTO chat_history (user_id, companion_id, role, content) VALUES (?, ?, ?, ?)",
-        (user_id, companion_id or 'ananya', role, content)
+        "INSERT INTO chat_history (session_id, user_id, companion_id, role, content) VALUES (?, ?, ?, ?, ?)",
+        ("default_session", user_id, companion_id or 'ananya', role, content)
     )
     conn.commit()
     conn.close()
@@ -192,5 +195,5 @@ def get_all_memories(user_id: int):
     return {row["key"]: row["value"] for row in rows}
 
 
-# Auto-init & migrate DB schema
+# Auto-init DB
 init_db()
