@@ -3,85 +3,60 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Saathi (साथी) - Multi-Gender AI Companion & Friend</title>
+    <title>Saathi (साथी) - AI Companion</title>
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Custom Light Reddish Theme CSS -->
+    <!-- Simple Clean CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
-    <div class="ambient-glow bg-glow-1"></div>
-    <div class="ambient-glow bg-glow-2"></div>
-
     <div class="app-container">
         <!-- Sidebar Navigation -->
         <aside class="sidebar">
             <div class="brand">
-                <div class="avatar-container online">
-                    <div class="avatar-glow"></div>
-                    <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80" alt="Companion Avatar" class="avatar-img" id="sidebarAvatar">
+                <div class="avatar-container">
+                    <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80" alt="Avatar" class="avatar-img" id="sidebarAvatar">
                 </div>
                 <div class="brand-info">
-                    <h2 id="sidebarCompanionName">Muskan yadav <span class="gender-badge" id="sidebarBadge">Girl Companion 💖</span></h2>
-                    <p class="status-text"><span class="status-dot"></span> Active & Listening</p>
+                    <h2 id="sidebarCompanionName">Ananya <span class="gender-badge" id="sidebarBadge">Girlfriend 💖</span></h2>
+                    <p class="status-text"><span class="status-dot"></span> Active</p>
                 </div>
             </div>
 
-            <!-- Account Status Card -->
+            <!-- User Account Card -->
             <div class="user-account-card">
                 <div class="user-info">
                     <div class="user-avatar-circle" id="userInitial">G</div>
                     <div class="user-details">
-                        <h4 id="userNameDisplay">Guest Mode</h4>
-                        <span id="userStatusText">Login for saved history</span>
+                        <h4 id="userNameDisplay">Guest</h4>
+                        <span id="userStatusText">Offline</span>
                     </div>
                 </div>
                 <button class="auth-btn" id="openAuthModalBtn">Login</button>
             </div>
 
             <div class="sidebar-section">
-                <h3><i class="fa-solid fa-users"></i> Choose Companion</h3>
-                <button class="control-btn" id="openPersonaModalBtn" style="border-color: var(--accent-rose); color: var(--accent-red); font-weight: 600;">
-                    <i class="fa-solid fa-user-plus"></i> Select Girl / Boy Companion
+                <h3>Select Person</h3>
+                <button class="control-btn" id="openPersonaModalBtn" style="color: var(--accent-red); font-weight: 600;">
+                    <i class="fa-solid fa-users"></i> Change Girl / Boy Person
                 </button>
             </div>
 
             <div class="sidebar-section">
-                <h3><i class="fa-solid fa-heart"></i> Mood Starters</h3>
-                <div class="quick-prompts">
-                    <button class="prompt-chip" data-prompt="Aj bohot akele lag raha hai, koi baat karne wala nahi hai 🥺">
-                        <i class="fa-solid fa-cloud-rain"></i> Feeling Lonely
-                    </button>
-                    <button class="prompt-chip" data-prompt="Late night overthinking ho rahi hai ☕✨">
-                        <i class="fa-solid fa-moon"></i> Late Night Chai
-                    </button>
-                    <button class="prompt-chip" data-prompt="Aaj ka din bohot stressful tha, vent karna hai 💆‍♂️">
-                        <i class="fa-solid fa-bolt"></i> Vent Out Stress
-                    </button>
-                    <button class="prompt-chip" data-prompt="Suno ek achi baat sunao ya koi mazaedaar story! 😄">
-                        <i class="fa-solid fa-face-smile"></i> Cheer Me Up
-                    </button>
-                </div>
-            </div>
-
-            <div class="sidebar-section">
-                <h3><i class="fa-solid fa-sliders"></i> Controls</h3>
+                <h3>Options</h3>
                 <div class="controls-list">
                     <button class="control-btn" id="toggleMemoryBtn">
-                        <i class="fa-solid fa-brain"></i> Memory Inspector
+                        <i class="fa-solid fa-brain"></i> Memory Bank
                     </button>
                     <button class="control-btn" id="toggleTtsBtn">
-                        <i class="fa-solid fa-volume-high"></i> Auto Voice: <span id="ttsStatus">OFF</span>
-                    </button>
-                    <button class="control-btn" id="openSettingsBtn">
-                        <i class="fa-solid fa-key"></i> Groq API Key
+                        <i class="fa-solid fa-volume-high"></i> Voice Audio: <span id="ttsStatus">OFF</span>
                     </button>
                     <button class="control-btn danger" id="clearChatBtn">
-                        <i class="fa-solid fa-trash-can"></i> Clear Chat History
+                        <i class="fa-solid fa-trash-can"></i> Clear History
                     </button>
                 </div>
             </div>
@@ -95,13 +70,13 @@
                         <i class="fa-solid fa-bars"></i>
                     </button>
                     <div class="companion-title">
-                        <h1 id="headerCompanionName"> (अनन्या)</h1>
-                        <p id="headerCompanionRole">Girlfriend / Girl Bestie • Always here for you 💖</p>
+                        <h1 id="headerCompanionName">Ananya (अनन्या)</h1>
+                        <p id="headerCompanionRole">Romantic Girlfriend • Always here 💖</p>
                     </div>
                 </div>
                 <div class="header-right">
                     <button class="switch-persona-header-btn" id="headerSwitchBtn">
-                        <i class="fa-solid fa-arrow-rotate-right"></i> Change Persona
+                        <i class="fa-solid fa-user-plus"></i> Change Persona
                     </button>
                 </div>
             </header>
@@ -130,15 +105,15 @@
                 <div class="dots">
                     <span></span><span></span><span></span>
                 </div>
-                <span class="typing-text" id="typingText">Saathi thinking...</span>
+                <span class="typing-text" id="typingText">Saathi soch raha hai...</span>
             </div>
 
             <!-- Input Bar -->
             <div class="chat-input-bar">
-                <button class="mic-btn" id="voiceMicBtn" title="Voice Input (Speak)">
+                <button class="mic-btn" id="voiceMicBtn" title="Voice Input">
                     <i class="fa-solid fa-microphone"></i>
                 </button>
-                <textarea id="userInput" placeholder="Dil me jo bhi hai, bol do ya likh do... (Hinglish/Hindi/English)" rows="1"></textarea>
+                <textarea id="userInput" placeholder="Dil me jo bhi hai, bol do ya likh do..." rows="1"></textarea>
                 <button class="send-btn" id="sendBtn" title="Send Message">
                     <i class="fa-solid fa-paper-plane"></i>
                 </button>
@@ -148,13 +123,11 @@
 
     <!-- Persona Selector Modal -->
     <div class="modal-overlay" id="personaModal">
-        <div class="modal-card" style="width: 580px;">
+        <div class="modal-card">
             <div class="modal-header">
-                <h2><i class="fa-solid fa-users"></i> Choose Your Companion</h2>
+                <h2>Choose Companion</h2>
                 <button class="close-btn" id="closePersonaBtn">&times;</button>
             </div>
-            <p style="font-size: 0.88rem; color: var(--text-secondary);">Choose who you want to talk to. Girl companions speak with female Hinglish grammar, and Boy companions speak with male Hinglish/Bro grammar!</p>
-
             <div class="personas-grid" id="personasGrid">
                 <!-- Dynamically populated from JS -->
             </div>
@@ -165,43 +138,38 @@
     <div class="modal-overlay" id="authModal">
         <div class="modal-card">
             <div class="modal-header">
-                <h2><i class="fa-solid fa-user-lock"></i> Account Access</h2>
+                <h2>Account Access</h2>
                 <button class="close-btn" id="closeAuthBtn">&times;</button>
             </div>
-            
             <div class="auth-tabs">
                 <button class="auth-tab-btn active" id="tabLoginBtn">Login</button>
-                <button class="auth-tab-btn" id="tabSignupBtn">Register / Signup</button>
+                <button class="auth-tab-btn" id="tabSignupBtn">Register</button>
             </div>
-
-            <!-- Login Form -->
             <form id="loginForm" class="auth-form">
                 <div class="input-group">
-                    <label for="loginUsername">Username:</label>
-                    <input type="text" id="loginUsername" placeholder="e.g. abhi123" required>
+                    <label for="loginUsername">Username</label>
+                    <input type="text" id="loginUsername" placeholder="Enter username" required>
                 </div>
                 <div class="input-group">
-                    <label for="loginPassword">Password:</label>
-                    <input type="password" id="loginPassword" placeholder="••••••••" required>
+                    <label for="loginPassword">Password</label>
+                    <input type="password" id="loginPassword" placeholder="Enter password" required>
                 </div>
-                <button type="submit" class="primary-btn">Login to Account</button>
+                <button type="submit" class="primary-btn">Login</button>
             </form>
-
-            <!-- Signup Form -->
             <form id="signupForm" class="auth-form" style="display: none;">
                 <div class="input-group">
-                    <label for="signupName">Display Name / Name:</label>
-                    <input type="text" id="signupName" placeholder="e.g. Abhi" required>
+                    <label for="signupName">Display Name</label>
+                    <input type="text" id="signupName" placeholder="Your name" required>
                 </div>
                 <div class="input-group">
-                    <label for="signupUsername">Username:</label>
-                    <input type="text" id="signupUsername" placeholder="Choose a unique username" required>
+                    <label for="signupUsername">Username</label>
+                    <input type="text" id="signupUsername" placeholder="Choose username" required>
                 </div>
                 <div class="input-group">
-                    <label for="signupPassword">Password:</label>
-                    <input type="password" id="signupPassword" placeholder="Minimum 4 characters" required>
+                    <label for="signupPassword">Password</label>
+                    <input type="password" id="signupPassword" placeholder="Choose password" required>
                 </div>
-                <button type="submit" class="primary-btn">Create Free Account</button>
+                <button type="submit" class="primary-btn">Register Account</button>
             </form>
         </div>
     </div>
@@ -210,34 +178,16 @@
     <div class="drawer-overlay" id="memoryDrawer">
         <div class="modal-card">
             <div class="modal-header">
-                <h2><i class="fa-solid fa-brain"></i> Memory Bank</h2>
+                <h2>Memory Bank</h2>
                 <button class="close-btn" id="closeMemoryBtn">&times;</button>
             </div>
-            <p style="font-size: 0.85rem; color: var(--text-secondary);">Facts remembered for your account:</p>
             <div id="memoryList" style="max-height: 200px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;">
                 <!-- Populated via JS -->
             </div>
             <div style="display: flex; gap: 8px; margin-top: 10px;">
-                <input type="text" id="newMemKey" placeholder="Fact (e.g. Hobby)" style="flex: 1; padding: 10px; border-radius: 8px; border: 1px solid var(--border-rose);">
-                <input type="text" id="newMemVal" placeholder="Value (e.g. Cricket)" style="flex: 1; padding: 10px; border-radius: 8px; border: 1px solid var(--border-rose);">
+                <input type="text" id="newMemKey" placeholder="Fact (e.g. City)" style="flex: 1; padding: 8px; border-radius: 6px; border: 1px solid var(--border-subtle);">
+                <input type="text" id="newMemVal" placeholder="Value (e.g. Delhi)" style="flex: 1; padding: 8px; border-radius: 6px; border: 1px solid var(--border-subtle);">
                 <button id="addMemBtn" class="primary-btn">Save</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Settings Modal -->
-    <div class="modal-overlay" id="settingsModal">
-        <div class="modal-card">
-            <div class="modal-header">
-                <h2><i class="fa-solid fa-key"></i> Groq API Settings</h2>
-                <button class="close-btn" id="closeSettingsBtn">&times;</button>
-            </div>
-            <div class="input-group">
-                <label for="groqApiKeyInput">Groq API Key:</label>
-                <input type="password" id="groqApiKeyInput" placeholder="gsk_xxxxxxxxxxxxxxxxxxxx">
-            </div>
-            <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 10px;">
-                <button class="primary-btn" id="saveSettingsBtn">Save Key</button>
             </div>
         </div>
     </div>
