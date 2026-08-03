@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Saathi AI Companion - Main Client Logic with Auth & Persona Switcher
+   Saathi AI Companion - Main Client Logic with Safe Element Binding
    ========================================================================== */
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -63,8 +63,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const mobileSidebarBtn = document.getElementById("mobileSidebarBtn");
     const sidebar = document.querySelector(".sidebar");
 
-    // Load Groq Key
-    if (localStorage.getItem("saathi_groq_key")) {
+    // Load stored Groq key if available
+    if (groqApiKeyInput && localStorage.getItem("saathi_groq_key")) {
         groqApiKeyInput.value = localStorage.getItem("saathi_groq_key");
     }
 
@@ -85,102 +85,111 @@ document.addEventListener("DOMContentLoaded", () => {
             const data = await res.json();
             if (data.status === "authenticated" && data.user) {
                 currentUser = data.user;
-                userInitial.textContent = currentUser.display_name.charAt(0).toUpperCase();
-                userNameDisplay.textContent = currentUser.display_name;
-                userStatusText.textContent = `@${currentUser.username}`;
-                openAuthModalBtn.textContent = "Logout";
+                if (userInitial) userInitial.textContent = currentUser.display_name.charAt(0).toUpperCase();
+                if (userNameDisplay) userNameDisplay.textContent = currentUser.display_name;
+                if (userStatusText) userStatusText.textContent = `@${currentUser.username}`;
+                if (openAuthModalBtn) openAuthModalBtn.textContent = "Logout";
             } else {
                 currentUser = null;
-                userInitial.textContent = "G";
-                userNameDisplay.textContent = "Guest Mode";
-                userStatusText.textContent = "Login for saved history";
-                openAuthModalBtn.textContent = "Login";
+                if (userInitial) userInitial.textContent = "G";
+                if (userNameDisplay) userNameDisplay.textContent = "Guest";
+                if (userStatusText) userStatusText.textContent = "Offline";
+                if (openAuthModalBtn) openAuthModalBtn.textContent = "Login";
             }
         } catch (e) {
             console.log("Auth check error:", e);
         }
     }
 
-    // Auth Button click (Login or Logout)
-    openAuthModalBtn.addEventListener("click", () => {
-        if (currentUser) {
-            // Logout
-            fetch("/api/logout", { method: "POST" }).then(() => {
-                checkAuthStatus();
-                loadChatHistory();
-            });
-        } else {
-            authModal.classList.add("active");
-        }
-    });
+    // Auth Button listener
+    if (openAuthModalBtn) {
+        openAuthModalBtn.addEventListener("click", () => {
+            if (currentUser) {
+                fetch("/api/logout", { method: "POST" }).then(() => {
+                    checkAuthStatus();
+                    loadChatHistory();
+                });
+            } else if (authModal) {
+                authModal.classList.add("active");
+            }
+        });
+    }
 
-    closeAuthBtn.addEventListener("click", () => authModal.classList.remove("active"));
+    if (closeAuthBtn && authModal) {
+        closeAuthBtn.addEventListener("click", () => authModal.classList.remove("active"));
+    }
 
     // Auth Tabs
-    tabLoginBtn.addEventListener("click", () => {
-        tabLoginBtn.classList.add("active");
-        tabSignupBtn.classList.remove("active");
-        loginForm.style.display = "flex";
-        signupForm.style.display = "none";
-    });
+    if (tabLoginBtn && tabSignupBtn && loginForm && signupForm) {
+        tabLoginBtn.addEventListener("click", () => {
+            tabLoginBtn.classList.add("active");
+            tabSignupBtn.classList.remove("active");
+            loginForm.style.display = "flex";
+            signupForm.style.display = "none";
+        });
 
-    tabSignupBtn.addEventListener("click", () => {
-        tabSignupBtn.classList.add("active");
-        tabLoginBtn.classList.remove("active");
-        signupForm.style.display = "flex";
-        loginForm.style.display = "none";
-    });
+        tabSignupBtn.addEventListener("click", () => {
+            tabSignupBtn.classList.add("active");
+            tabLoginBtn.classList.remove("active");
+            signupForm.style.display = "flex";
+            loginForm.style.display = "none";
+        });
+    }
 
-    // Login Form Submit
-    loginForm.addEventListener("submit", async (e) => {
-        e.preventDefault();
-        const u = document.getElementById("loginUsername").value.trim();
-        const p = document.getElementById("loginPassword").value.trim();
-        try {
-            const res = await fetch("/api/login", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ username: u, password: p })
-            });
-            const data = await res.json();
-            if (data.status === "success") {
-                authModal.classList.remove("active");
-                await checkAuthStatus();
-                loadChatHistory();
-            } else {
-                alert(data.error || "Login failed");
+    // Login Submit
+    if (loginForm) {
+        loginForm.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const u = document.getElementById("loginUsername").value.trim();
+            const p = document.getElementById("loginPassword").value.trim();
+            try {
+                const res = await fetch("/api/login", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ username: u, password: p })
+                });
+                const data = await res.json();
+                if (data.status === "success") {
+                    if (authModal) authModal.classList.remove("active");
+                    await checkAuthStatus();
+                    loadChatHistory();
+                } else {
+                    alert(data.error || "Login failed");
+                }
+            } catch (err) {
+                alert("Login error");
             }
-        } catch (err) {
-            alert("Login error");
-        }
-    });
+        });
+    }
 
-    // Signup Form Submit
-    signupForm.addEventListener("submit", async (e) => {
-        e.preventDefault();
-        const name = document.getElementById("signupName").value.trim();
-        const u = document.getElementById("signupUsername").value.trim();
-        const p = document.getElementById("signupPassword").value.trim();
-        try {
-            const res = await fetch("/api/signup", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ display_name: name, username: u, password: p })
-            });
-            const data = await res.json();
-            if (data.status === "success") {
-                authModal.classList.remove("active");
-                await checkAuthStatus();
-                loadChatHistory();
-            } else {
-                alert(data.error || "Signup failed");
+    // Signup Submit
+    if (signupForm) {
+        signupForm.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const name = document.getElementById("signupName").value.trim();
+            const u = document.getElementById("signupUsername").value.trim();
+            const p = document.getElementById("signupPassword").value.trim();
+            try {
+                const res = await fetch("/api/signup", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ display_name: name, username: u, password: p })
+                });
+                const data = await res.json();
+                if (data.status === "success") {
+                    if (authModal) authModal.classList.remove("active");
+                    await checkAuthStatus();
+                    loadChatHistory();
+                } else {
+                    alert(data.error || "Signup failed");
+                }
+            } catch (err) {
+                alert("Signup error");
             }
-        } catch (err) {
-            alert("Signup error");
-        }
-    });
+        });
+    }
 
-    // 2. Personas Selection
+    // Personas Grid
     async function fetchPersonas() {
         try {
             const res = await fetch("/api/personas");
@@ -191,11 +200,12 @@ document.addEventListener("DOMContentLoaded", () => {
                 renderPersonasGrid(data.personas);
             }
         } catch (e) {
-            console.log("Fetch personas error:", e);
+            console.log("Fetch personas notice:", e);
         }
     }
 
     function renderPersonasGrid(personaList) {
+        if (!personasGrid) return;
         personasGrid.innerHTML = "";
         personaList.forEach(p => {
             const card = document.createElement("div");
@@ -208,7 +218,7 @@ document.addEventListener("DOMContentLoaded", () => {
             `;
             card.addEventListener("click", () => {
                 selectCompanion(p.id);
-                personaModal.classList.remove("active");
+                if (personaModal) personaModal.classList.remove("active");
             });
             personasGrid.appendChild(card);
         });
@@ -226,39 +236,50 @@ document.addEventListener("DOMContentLoaded", () => {
         const comp = personas[activeCompanionId] || {
             name: "Ananya",
             avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80",
-            role: "Girlfriend / Girl Bestie",
-            badge: "Girl Companion 💖"
+            role: "Romantic Girlfriend",
+            badge: "Girlfriend 💖"
         };
 
-        sidebarAvatar.src = comp.avatar;
-        sidebarCompanionName.childNodes[0].nodeValue = comp.name + " ";
-        sidebarBadge.textContent = comp.badge;
+        if (sidebarAvatar) sidebarAvatar.src = comp.avatar;
+        if (sidebarCompanionName) sidebarCompanionName.childNodes[0].nodeValue = comp.name + " ";
+        if (sidebarBadge) sidebarBadge.textContent = comp.badge;
 
-        headerCompanionName.textContent = comp.name;
-        headerCompanionRole.textContent = `${comp.role} • Always here for you ✨`;
-        typingText.textContent = `${comp.name} soch raha hai...`;
+        if (headerCompanionName) headerCompanionName.textContent = comp.name;
+        if (headerCompanionRole) headerCompanionRole.textContent = `${comp.role} • Always here 💖`;
+        if (typingText) typingText.textContent = `${comp.name} soch raha hai...`;
     }
 
-    openPersonaModalBtn.addEventListener("click", () => personaModal.classList.add("active"));
-    headerSwitchBtn.addEventListener("click", () => personaModal.classList.add("active"));
-    closePersonaBtn.addEventListener("click", () => personaModal.classList.remove("active"));
+    if (openPersonaModalBtn && personaModal) {
+        openPersonaModalBtn.addEventListener("click", () => personaModal.classList.add("active"));
+    }
+    if (headerSwitchBtn && personaModal) {
+        headerSwitchBtn.addEventListener("click", () => personaModal.classList.add("active"));
+    }
+    if (closePersonaBtn && personaModal) {
+        closePersonaBtn.addEventListener("click", () => personaModal.classList.remove("active"));
+    }
 
-    // 3. Chat Logic
-    userInput.addEventListener("input", () => {
-        userInput.style.height = "auto";
-        userInput.style.height = Math.min(userInput.scrollHeight, 120) + "px";
-    });
+    // 3. Chat Handler
+    if (userInput) {
+        userInput.addEventListener("input", () => {
+            userInput.style.height = "auto";
+            userInput.style.height = Math.min(userInput.scrollHeight, 100) + "px";
+        });
 
-    userInput.addEventListener("keydown", (e) => {
-        if (e.key === "Enter" && !e.shiftKey) {
-            e.preventDefault();
-            sendMessage();
-        }
-    });
+        userInput.addEventListener("keydown", (e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+    }
 
-    sendBtn.addEventListener("click", sendMessage);
+    if (sendBtn) {
+        sendBtn.addEventListener("click", sendMessage);
+    }
 
     async function sendMessage() {
+        if (!userInput) return;
         const text = userInput.value.trim();
         if (!text) return;
 
@@ -284,19 +305,20 @@ document.addEventListener("DOMContentLoaded", () => {
             const data = await res.json();
             showTyping(false);
 
-            if (data.status === "success") {
+            if (data.status === "success" && data.response) {
                 appendMessage("companion", data.response);
                 if (ttsEnabled) speakText(data.response);
             } else {
-                appendMessage("companion", "Arrey... Network issue aa gaya. Phir se kaho na!");
+                appendMessage("companion", "hnn main sun rhi hu... thoda net issue lag rha h, wapas bolo na! ☕");
             }
         } catch (e) {
             showTyping(false);
-            appendMessage("companion", "Arrey yaar... Connection lost. Par main yahi hu!");
+            appendMessage("companion", "hnn main sun rhi hu... connection issue h, wapas bolo na!");
         }
     }
 
     function appendMessage(sender, text, timestamp = "Just now") {
+        if (!chatMessages) return;
         const msgWrapper = document.createElement("div");
         msgWrapper.className = `message-wrapper ${sender}`;
 
@@ -320,7 +342,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (isCompanion) {
             const speechBtn = msgWrapper.querySelector(".msg-speech-btn");
-            speechBtn.addEventListener("click", () => speakText(text));
+            if (speechBtn) speechBtn.addEventListener("click", () => speakText(text));
         }
 
         chatMessages.appendChild(msgWrapper);
@@ -328,22 +350,24 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function showTyping(show) {
+        if (!typingIndicator) return;
         if (show) {
             typingIndicator.classList.add("active");
-            chatMessages.scrollTop = chatMessages.scrollHeight;
+            if (chatMessages) chatMessages.scrollTop = chatMessages.scrollHeight;
         } else {
             typingIndicator.classList.remove("active");
         }
     }
 
     async function loadChatHistory() {
+        if (!chatMessages) return;
         try {
             const res = await fetch(`/api/history?companion_id=${activeCompanionId}`);
             const data = await res.json();
             chatMessages.innerHTML = "";
             const comp = personas[activeCompanionId] || { name: "Ananya" };
 
-            if (data.status === "success" && data.history.length > 0) {
+            if (data.status === "success" && data.history && data.history.length > 0) {
                 data.history.forEach(msg => {
                     appendMessage(msg.role === "assistant" ? "companion" : "user", msg.content);
                 });
@@ -351,20 +375,12 @@ document.addEventListener("DOMContentLoaded", () => {
                 appendMessage("companion", `hey... hlo! 👋 main hu ${comp.name}. pta h, akele feel krne ki zarurat nhi h... main hu na! bolo kya hua ☕✨`);
             }
         } catch (e) {
-            console.log("History load error:", e);
+            console.log("History notice:", e);
         }
     }
 
-    // Quick Mood Starters
-    document.querySelectorAll(".prompt-chip").forEach(chip => {
-        chip.addEventListener("click", () => {
-            userInput.value = chip.getAttribute("data-prompt");
-            sendMessage();
-        });
-    });
-
-    // Voice Recording (STT)
-    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+    // Voice Mic (STT)
+    if (voiceMicBtn && ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         recognition = new SpeechRecognition();
         recognition.continuous = false;
@@ -372,7 +388,7 @@ document.addEventListener("DOMContentLoaded", () => {
         recognition.lang = 'hi-IN';
 
         recognition.onresult = (e) => {
-            userInput.value = e.results[0][0].transcript;
+            if (userInput) userInput.value = e.results[0][0].transcript;
             isRecording = false;
             voiceMicBtn.classList.remove("recording");
             sendMessage();
@@ -392,7 +408,7 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // Voice Speech (TTS)
+    // TTS Voice Speech
     function speakText(text) {
         if (!('speechSynthesis' in window)) return;
         window.speechSynthesis.cancel();
@@ -404,80 +420,96 @@ document.addEventListener("DOMContentLoaded", () => {
         window.speechSynthesis.speak(utterance);
     }
 
-    toggleTtsBtn.addEventListener("click", () => {
-        ttsEnabled = !ttsEnabled;
-        ttsStatus.textContent = ttsEnabled ? "ON" : "OFF";
-        if (!ttsEnabled) window.speechSynthesis.cancel();
-    });
+    if (toggleTtsBtn) {
+        toggleTtsBtn.addEventListener("click", () => {
+            ttsEnabled = !ttsEnabled;
+            if (ttsStatus) ttsStatus.textContent = ttsEnabled ? "ON" : "OFF";
+            if (!ttsEnabled) window.speechSynthesis.cancel();
+        });
+    }
 
     // Memory Drawer
-    toggleMemoryBtn.addEventListener("click", async () => {
-        if (!currentUser) {
-            alert("Please login first to access your personal memory bank!");
-            authModal.classList.add("active");
-            return;
-        }
-        memoryDrawer.classList.add("active");
-        const res = await fetch("/api/memory");
-        const data = await res.json();
-        if (data.status === "success") {
-            memoryList.innerHTML = "";
-            const keys = Object.keys(data.memories);
-            if (keys.length === 0) {
-                memoryList.innerHTML = `<div style="font-size: 0.85rem; color: var(--text-secondary);">No memories stored yet.</div>`;
-            } else {
-                keys.forEach(k => {
-                    const item = document.createElement("div");
-                    item.style.padding = "8px 12px";
-                    item.style.background = "#FFF8F6";
-                    item.style.borderRadius = "8px";
-                    item.style.fontSize = "0.85rem";
-                    item.innerHTML = `<strong>${k}:</strong> ${data.memories[k]}`;
-                    memoryList.appendChild(item);
-                });
+    if (toggleMemoryBtn) {
+        toggleMemoryBtn.addEventListener("click", async () => {
+            if (!currentUser) {
+                alert("Please login first to access your personal memory bank!");
+                if (authModal) authModal.classList.add("active");
+                return;
             }
-        }
-    });
+            if (memoryDrawer) memoryDrawer.classList.add("active");
+            const res = await fetch("/api/memory");
+            const data = await res.json();
+            if (data.status === "success" && memoryList) {
+                memoryList.innerHTML = "";
+                const keys = Object.keys(data.memories);
+                if (keys.length === 0) {
+                    memoryList.innerHTML = `<div style="font-size: 0.85rem; color: var(--text-muted);">No memories stored yet.</div>`;
+                } else {
+                    keys.forEach(k => {
+                        const item = document.createElement("div");
+                        item.style.padding = "6px 10px";
+                        item.style.background = "#F8FAFC";
+                        item.style.borderRadius = "6px";
+                        item.style.fontSize = "0.85rem";
+                        item.innerHTML = `<strong>${k}:</strong> ${data.memories[k]}`;
+                        memoryList.appendChild(item);
+                    });
+                }
+            }
+        });
+    }
 
-    closeMemoryBtn.addEventListener("click", () => memoryDrawer.classList.remove("active"));
+    if (closeMemoryBtn && memoryDrawer) {
+        closeMemoryBtn.addEventListener("click", () => memoryDrawer.classList.remove("active"));
+    }
 
-    addMemBtn.addEventListener("click", async () => {
-        const k = document.getElementById("newMemKey").value.trim();
-        const v = document.getElementById("newMemVal").value.trim();
-        if (k && v) {
-            await fetch("/api/memory", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ key: k, value: v })
-            });
-            document.getElementById("newMemKey").value = "";
-            document.getElementById("newMemVal").value = "";
-            toggleMemoryBtn.click();
-        }
-    });
+    if (addMemBtn) {
+        addMemBtn.addEventListener("click", async () => {
+            const k = document.getElementById("newMemKey").value.trim();
+            const v = document.getElementById("newMemVal").value.trim();
+            if (k && v) {
+                await fetch("/api/memory", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ key: k, value: v })
+                });
+                document.getElementById("newMemKey").value = "";
+                document.getElementById("newMemVal").value = "";
+                if (toggleMemoryBtn) toggleMemoryBtn.click();
+            }
+        });
+    }
 
-    // Settings
-    openSettingsBtn.addEventListener("click", () => settingsModal.classList.add("active"));
-    closeSettingsBtn.addEventListener("click", () => settingsModal.classList.remove("active"));
-    saveSettingsBtn.addEventListener("click", () => {
-        localStorage.setItem("saathi_groq_key", groqApiKeyInput.value.trim());
-        settingsModal.classList.remove("active");
-        alert("Groq API key saved!");
-    });
+    // Settings Modal
+    if (openSettingsBtn && settingsModal) {
+        openSettingsBtn.addEventListener("click", () => settingsModal.classList.add("active"));
+    }
+    if (closeSettingsBtn && settingsModal) {
+        closeSettingsBtn.addEventListener("click", () => settingsModal.classList.remove("active"));
+    }
+    if (saveSettingsBtn && settingsModal) {
+        saveSettingsBtn.addEventListener("click", () => {
+            if (groqApiKeyInput) localStorage.setItem("saathi_groq_key", groqApiKeyInput.value.trim());
+            settingsModal.classList.remove("active");
+            alert("Groq API key saved!");
+        });
+    }
 
-    // Clear History
-    clearChatBtn.addEventListener("click", async () => {
-        if (confirm("Clear chat history for this companion?")) {
-            await fetch("/api/clear", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ companion_id: activeCompanionId })
-            });
-            loadChatHistory();
-        }
-    });
+    // Clear Chat
+    if (clearChatBtn) {
+        clearChatBtn.addEventListener("click", async () => {
+            if (confirm("Clear chat history for this companion?")) {
+                await fetch("/api/clear", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ companion_id: activeCompanionId })
+                });
+                loadChatHistory();
+            }
+        });
+    }
 
-    if (mobileSidebarBtn) {
+    if (mobileSidebarBtn && sidebar) {
         mobileSidebarBtn.addEventListener("click", () => sidebar.classList.toggle("open"));
     }
 });
