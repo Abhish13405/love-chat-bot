@@ -91,7 +91,7 @@ def generate_companion_response(user_id: int, companion_id: str, user_message: s
                 messages=messages,
                 model=selected_model,
                 temperature=0.92,
-                max_tokens=60,
+                max_tokens=80,
                 top_p=0.95,
             )
 
