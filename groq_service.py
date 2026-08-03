@@ -1,9 +1,10 @@
 """
-Groq Service Integration with Integrated NLP Emotion & Entity Analysis
-and Smart Context-Aware Fallback Engine.
+AI Service Integration Engine (Groq + OpenAI API Support).
+Includes anti-repetition frequency penalties, history deduplication, and ultra-realistic human response generation.
 """
 
 import os
+import random
 from dotenv import load_dotenv
 from persona_dataset import (
     COMPANION_PERSONAS,
@@ -16,11 +17,19 @@ from nlp_engine import analyze_user_sentiment, extract_user_entities
 
 load_dotenv()
 
+# Try loading Groq SDK
 try:
     from groq import Groq
     GROQ_AVAILABLE = True
 except ImportError:
     GROQ_AVAILABLE = False
+
+# Try loading OpenAI SDK
+try:
+    from openai import OpenAI
+    OPENAI_AVAILABLE = True
+except ImportError:
+    OPENAI_AVAILABLE = False
 
 
 def get_groq_client(custom_api_key=None):
@@ -29,9 +38,34 @@ def get_groq_client(custom_api_key=None):
         try:
             return Groq(api_key=api_key.strip(), timeout=10.0)
         except Exception as e:
-            print(f"Groq Init Warning: {e}")
+            print(f"Groq Init Notice: {e}")
             return None
     return None
+
+
+def get_openai_client(custom_api_key=None):
+    api_key = custom_api_key or os.getenv("OPENAI_API_KEY")
+    if OPENAI_AVAILABLE and api_key and api_key.strip():
+        try:
+            return OpenAI(api_key=api_key.strip(), timeout=10.0)
+        except Exception as e:
+            print(f"OpenAI Init Notice: {e}")
+            return None
+    return None
+
+
+def filter_dedup_history(history):
+    """Filters out consecutive duplicate assistant messages to prevent LLM repetition loops."""
+    clean_hist = []
+    last_assistant_msg = ""
+    for msg in history:
+        if msg["role"] == "assistant":
+            # Skip if exact duplicate of last assistant message
+            if msg["content"].strip().lower() == last_assistant_msg.lower():
+                continue
+            last_assistant_msg = msg["content"].strip()
+        clean_hist.append(msg)
+    return clean_hist
 
 
 def generate_companion_response(user_id: int, companion_id: str, user_message: str, custom_api_key: str = None) -> dict:
@@ -63,6 +97,7 @@ def generate_companion_response(user_id: int, companion_id: str, user_message: s
     # 3. Get recent history & memories
     try:
         history = get_recent_history(user_id, companion_id, limit=14)
+        history = filter_dedup_history(history)
         memories = get_all_memories(user_id) if user_id else {}
     except Exception:
         history = []
@@ -77,21 +112,59 @@ def generate_companion_response(user_id: int, companion_id: str, user_message: s
 
     system_prompt = get_companion_prompt(companion_id) + memory_snippet + nlp_snippet
 
-    client = get_groq_client(custom_api_key)
-    selected_model = "llama-3.3-70b-versatile"
-
-    if client:
+    # 4. Check for OpenAI Client first if key provided
+    openai_client = get_openai_client(custom_api_key)
+    if openai_client:
         try:
             messages = [{"role": "system", "content": system_prompt}]
             for msg in history:
                 role = "assistant" if msg["role"] == "assistant" else "user"
                 messages.append({"role": role, "content": msg["content"]})
 
-            chat_completion = client.chat.completions.create(
+            chat_completion = openai_client.chat.completions.create(
+                messages=messages,
+                model="gpt-4o-mini",
+                temperature=0.8,
+                max_tokens=100,
+                presence_penalty=0.7,   # Strongly encourages introducing new topics
+                frequency_penalty=0.7,  # Strongly prevents repeating words/phrases
+            )
+
+            raw_reply = chat_completion.choices[0].message.content
+            cleaned_reply = clean_bot_cliches(raw_reply)
+
+            try:
+                save_message(user_id, companion_id, "assistant", cleaned_reply)
+            except Exception:
+                pass
+
+            return {
+                "response": cleaned_reply,
+                "source": "openai",
+                "model": "gpt-4o-mini",
+                "emotion": dominant_emotion
+            }
+        except Exception as e:
+            print(f"OpenAI API call notice: {e}")
+
+    # 5. Check for Groq Client
+    groq_client = get_groq_client(custom_api_key)
+    selected_model = "llama-3.3-70b-versatile"
+
+    if groq_client:
+        try:
+            messages = [{"role": "system", "content": system_prompt}]
+            for msg in history:
+                role = "assistant" if msg["role"] == "assistant" else "user"
+                messages.append({"role": role, "content": msg["content"]})
+
+            chat_completion = groq_client.chat.completions.create(
                 messages=messages,
                 model=selected_model,
-                temperature=0.75,
+                temperature=0.85,
                 max_tokens=100,
+                presence_penalty=0.7,   # Strongly encourages new topic creation
+                frequency_penalty=0.7,  # Strictly penalizes word/phrase repetition!
                 top_p=0.9,
             )
 
@@ -111,9 +184,9 @@ def generate_companion_response(user_id: int, companion_id: str, user_message: s
             }
 
         except Exception as e:
-            print(f"Groq API call execution warning: {e}")
+            print(f"Groq API call notice: {e}")
 
-    # Smart Context-Aware Fallback
+    # 6. Smart Context Fallback
     gender = companion_info["gender"]
     reply = get_smart_fallback_reply(user_message, gender)
 
