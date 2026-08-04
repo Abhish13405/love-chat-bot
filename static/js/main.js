@@ -509,7 +509,51 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    if (mobileSidebarBtn && sidebar) {
-        mobileSidebarBtn.addEventListener("click", () => sidebar.classList.toggle("open"));
+    // Mobile Sidebar Toggle & Reverse Backdrop Logic
+    const sidebarOverlay = document.getElementById("sidebarOverlay");
+    const closeSidebarBtn = document.getElementById("closeSidebarBtn");
+
+    function openMobileSidebar() {
+        if (sidebar) sidebar.classList.add("open");
+        if (sidebarOverlay) sidebarOverlay.classList.add("active");
+    }
+
+    function closeMobileSidebar() {
+        if (sidebar) sidebar.classList.remove("open");
+        if (sidebarOverlay) sidebarOverlay.classList.remove("active");
+    }
+
+    if (mobileSidebarBtn) {
+        mobileSidebarBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            if (sidebar && sidebar.classList.contains("open")) {
+                closeMobileSidebar();
+            } else {
+                openMobileSidebar();
+            }
+        });
+    }
+
+    if (sidebarOverlay) {
+        sidebarOverlay.addEventListener("click", closeMobileSidebar);
+    }
+
+    if (closeSidebarBtn) {
+        closeSidebarBtn.addEventListener("click", closeMobileSidebar);
+    }
+
+    // Auto-close sidebar on mobile when persona or options are selected
+    if (openPersonaModalBtn) {
+        openPersonaModalBtn.addEventListener("click", () => {
+            closeMobileSidebar();
+            if (personaModal) personaModal.classList.add("active");
+        });
+    }
+
+    if (openAuthModalBtn) {
+        openAuthModalBtn.addEventListener("click", () => {
+            if (window.innerWidth <= 768) closeMobileSidebar();
+        });
     }
 });
+

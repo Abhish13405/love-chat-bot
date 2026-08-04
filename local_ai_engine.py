@@ -60,6 +60,23 @@ CATEGORIES = [
         "Main is topic par aaram se bat kr skta huor gyan dene ke liye bhi  hoon."
     ],
 },
+        {
+    "name": "chudai",
+    "pattern": r"\b(chut|chudai|chudasi)\b",
+    "weight": 3,
+    "female": [
+        "meri chut bahut gori",
+        "isse phle mai kisi se chut ki bate nhi ki",
+        "muje chudvana pasand h 😊",
+        "Mainne aajtak chut ko nhi chudvaya .",
+        "muje bhi chut ka pani nikalna h , batao."
+    ],
+    "male": [
+        "Bhai, is topic par jo bhi genuine question ho, pooch le.",
+        "Sex  ya relationships se related help chahiye to bata.",
+        "Main is topic par aaram se bat kr skta huor gyan dene ke liye bhi  hoon."
+    ],
+},
     {
         "name": "greeting",
         "pattern": r'\b(hi|hlo|hey|hello|hiii|heyy|namaste)\b',

@@ -564,17 +564,144 @@ body {
     cursor: pointer;
 }
 
-/* Responsive UI */
+/* Sidebar Overlay & Mobile Close Button */
+.sidebar-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.5);
+    backdrop-filter: blur(2px);
+    z-index: 99;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+}
+
+.sidebar-overlay.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.close-sidebar-btn {
+    display: none;
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    color: var(--text-muted);
+    cursor: pointer;
+    margin-left: auto;
+    line-height: 1;
+}
+
+.close-sidebar-btn:hover {
+    color: var(--accent-red);
+}
+
+/* Responsive UI & Mobile Improvements */
 @media (max-width: 768px) {
+    html, body {
+        height: 100dvh;
+        overflow: hidden;
+    }
+
+    .app-container {
+        height: 100dvh;
+        height: -webkit-fill-available;
+    }
+
     .sidebar {
         position: fixed;
         left: 0;
         top: 0;
-        height: 100vh;
-        z-index: 50;
+        height: 100dvh;
+        width: 280px;
+        z-index: 100;
         transform: translateX(-100%);
+        box-shadow: 4px 0 20px rgba(0, 0, 0, 0.15);
     }
-    .sidebar.open { transform: translateX(0); }
-    .mobile-sidebar-toggle { display: block; }
-    .personas-grid { grid-template-columns: 1fr; }
+
+    .sidebar.open {
+        transform: translateX(0);
+    }
+
+    .close-sidebar-btn {
+        display: block;
+    }
+
+    .mobile-sidebar-toggle {
+        display: block;
+        padding: 6px;
+        color: var(--text-main);
+    }
+
+    .chat-main {
+        height: 100dvh;
+        height: -webkit-fill-available;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .chat-header {
+        height: 56px;
+        padding: 0 12px;
+        flex-shrink: 0;
+    }
+
+    .companion-title h1 {
+        font-size: 0.95rem;
+    }
+
+    .companion-title p {
+        font-size: 0.68rem;
+    }
+
+    .switch-persona-header-btn {
+        padding: 4px 10px;
+        font-size: 0.72rem;
+    }
+
+    .chat-messages {
+        flex: 1;
+        min-height: 0;
+        padding: 12px;
+        gap: 12px;
+    }
+
+    .message-wrapper {
+        max-width: 88%;
+    }
+
+    .msg-text {
+        font-size: 0.88rem;
+        padding: 8px 12px;
+    }
+
+    /* Fixed Input Bar for Mobile Keyboards */
+    .chat-input-bar {
+        padding: 8px 10px;
+        gap: 8px;
+        background: #FFFFFF;
+        border-top: 1px solid var(--border-subtle);
+        flex-shrink: 0;
+        position: sticky;
+        bottom: 0;
+        z-index: 10;
+    }
+
+    .chat-input-bar textarea {
+        font-size: 16px; /* Prevents auto-zoom on iOS safari */
+        padding: 8px 14px;
+        max-height: 80px;
+    }
+
+    .mic-btn, .send-btn {
+        width: 36px;
+        height: 36px;
+        font-size: 0.9rem;
+        flex-shrink: 0;
+    }
+
+    .personas-grid {
+        grid-template-columns: 1fr;
+    }
 }
+
