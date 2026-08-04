@@ -73,6 +73,21 @@ def generate_companion_response(user_id: int, companion_id: str, user_message: s
     except Exception as e:
         print(f"Save message notice: {e}")
 
+    # 3.5 Hand-Written Keyword Interceptor (Priority check for custom responses)
+    import re
+    if re.search(r'\b(sex|sexual|sexy)\b', user_message.lower()):
+        reply = get_local_companion_response(user_message, companion_id)
+        try:
+            save_message(user_id, companion_id, "assistant", reply)
+        except Exception:
+            pass
+        return {
+            "response": reply,
+            "source": "handwritten_local",
+            "model": f"{companion_info['name']} Custom Response",
+            "emotion": dominant_emotion
+        }
+
     # 4. Optional OpenAI API Execution
     openai_client = get_openai_client(custom_api_key)
     if openai_client:

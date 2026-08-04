@@ -29,7 +29,7 @@ CATEGORIES = [
     },
     {
         "name": "love",
-        "pattern": r'\b(love|pyaar|pyar|miss|jaan|cute|sweet|)\b',
+        "pattern": r'\b(love|pyaar|pyar|miss|jaan|cute|sweet)\b',
         "weight": 3,
         "female": [
             "bohot sara pyaar... 💖 aap mere sabse khas ho! 🙈",
@@ -50,9 +50,9 @@ CATEGORIES = [
     "female": [
         "yar  tu meri jan hai",
         "mai tumse sach me pyar krna chahti hu or vo bhi",
-        "Is topic par agar tum bat kroge  mai tumse bat nhi krungi. 😊",
-        "Main sexualor relationships se jude sawalon mein bat  kar sakti hoon.",
-        "Agar tum sex ya relationship ke baare mein mujse bat krna chahte , batao."
+        "muje sex pasand hai 😊",
+        "Mainne aajtak sex nhi kiya.",
+        "muje bhi sex krna h aapke sath , batao."
     ],
     "male": [
         "Bhai, is topic par jo bhi genuine question ho, pooch le.",
