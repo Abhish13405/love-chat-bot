@@ -18,7 +18,14 @@ from memory_db import (
 
 app = Flask(__name__)
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "saathi_lonely_companion_secret_key_9988")
+app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
 
+@app.after_request
+def add_header(response):
+    response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
+    return response
 
 @app.before_request
 def ensure_session():

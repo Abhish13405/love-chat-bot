@@ -11,7 +11,47 @@
     <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Deep Black Dark Theme CSS -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=4.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=5.0_black">
+    <style>
+        :root {
+            --bg-main: #0B0C10 !important;
+            --bg-sidebar: #12131A !important;
+            --bg-header: rgba(11, 12, 16, 0.88) !important;
+            --bg-card: #181922 !important;
+            --bg-input: #161720 !important;
+            --border-subtle: #232532 !important;
+            --text-main: #F3F4F6 !important;
+            --text-heading: #FFFFFF !important;
+            --text-muted: #9CA3AF !important;
+            --accent-red: #E11D48 !important;
+            --msg-companion-bg: #181A24 !important;
+            --msg-companion-text: #F3F4F6 !important;
+            --msg-user-bg: #E11D48 !important;
+            --msg-user-text: #FFFFFF !important;
+        }
+        body, html, .app-container, .chat-main {
+            background-color: #0B0C10 !important;
+            color: #F3F4F6 !important;
+        }
+        .sidebar {
+            background-color: #12131A !important;
+            border-color: #232532 !important;
+        }
+        .chat-header {
+            background-color: rgba(11, 12, 16, 0.95) !important;
+            border-color: #232532 !important;
+        }
+        .user-account-card, .control-btn, .chat-input-bar textarea {
+            background-color: #181922 !important;
+            border-color: #232532 !important;
+            color: #F3F4F6 !important;
+        }
+        .companion .msg-text {
+            background-color: #181A24 !important;
+            color: #F3F4F6 !important;
+            border: 1px solid #282B3C !important;
+        }
+    </style>
 </head>
 <body>
     <div class="app-container">
