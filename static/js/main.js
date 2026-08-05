@@ -319,6 +319,11 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     async function sendMessage() {
+        if (!currentUser) {
+            if (authModal) authModal.classList.add("active");
+            showAuthError("Please create an account or login to start chatting!");
+            return;
+        }
         if (!userInput) return;
         const text = userInput.value.trim();
         if (!text) return;

@@ -120,6 +120,10 @@ def personas():
 @app.route("/api/chat", methods=["POST"])
 def chat():
     try:
+        user_id = session.get("user_id")
+        if not user_id:
+            return jsonify({"error": "Authentication required. Please login or register."}), 401
+
         data = request.get_json() or {}
         user_message = data.get("message", "").strip()
         companion_id = data.get("companion_id", "ananya").strip()
@@ -127,8 +131,6 @@ def chat():
 
         if not user_message:
             return jsonify({"error": "Message cannot be empty"}), 400
-
-        user_id = session.get("user_id")
 
         # Generate response safely
         result = generate_companion_response(user_id, companion_id, user_message, custom_api_key)
@@ -155,6 +157,8 @@ def chat():
 def history():
     try:
         user_id = session.get("user_id")
+        if not user_id:
+            return jsonify({"status": "success", "history": []})
         companion_id = request.args.get("companion_id", "ananya").strip()
         chats = get_recent_history(user_id, companion_id, limit=30)
         return jsonify({"status": "success", "history": chats})
