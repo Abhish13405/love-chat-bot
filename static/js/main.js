@@ -78,7 +78,26 @@ document.addEventListener("DOMContentLoaded", () => {
         loadChatHistory();
     }
 
-    // 1. Check Auth Status
+    const authErrorMsg = document.getElementById("authErrorMsg");
+
+    // Helper to show auth errors
+    function showAuthError(msg) {
+        if (authErrorMsg) {
+            authErrorMsg.textContent = msg;
+            authErrorMsg.style.display = "block";
+        } else {
+            alert(msg);
+        }
+    }
+
+    function clearAuthError() {
+        if (authErrorMsg) {
+            authErrorMsg.textContent = "";
+            authErrorMsg.style.display = "none";
+        }
+    }
+
+    // 1. Check Auth Status (Mandatory Auth Wall)
     async function checkAuthStatus() {
         try {
             const res = await fetch("/api/me");
@@ -89,15 +108,19 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (userNameDisplay) userNameDisplay.textContent = currentUser.display_name;
                 if (userStatusText) userStatusText.textContent = `@${currentUser.username}`;
                 if (openAuthModalBtn) openAuthModalBtn.textContent = "Logout";
+                if (authModal) authModal.classList.remove("active");
             } else {
                 currentUser = null;
                 if (userInitial) userInitial.textContent = "G";
                 if (userNameDisplay) userNameDisplay.textContent = "Guest";
                 if (userStatusText) userStatusText.textContent = "Offline";
                 if (openAuthModalBtn) openAuthModalBtn.textContent = "Login";
+                // Show mandatory auth modal if guest
+                if (authModal) authModal.classList.add("active");
             }
         } catch (e) {
             console.log("Auth check error:", e);
+            if (authModal) authModal.classList.add("active");
         }
     }
 
@@ -110,18 +133,26 @@ document.addEventListener("DOMContentLoaded", () => {
                     loadChatHistory();
                 });
             } else if (authModal) {
+                clearAuthError();
                 authModal.classList.add("active");
             }
         });
     }
 
     if (closeAuthBtn && authModal) {
-        closeAuthBtn.addEventListener("click", () => authModal.classList.remove("active"));
+        closeAuthBtn.addEventListener("click", () => {
+            if (currentUser) {
+                authModal.classList.remove("active");
+            } else {
+                showAuthError("Please create an account or login to start chatting!");
+            }
+        });
     }
 
-    // Auth Tabs
+    // Auth Tabs Switching
     if (tabLoginBtn && tabSignupBtn && loginForm && signupForm) {
         tabLoginBtn.addEventListener("click", () => {
+            clearAuthError();
             tabLoginBtn.classList.add("active");
             tabSignupBtn.classList.remove("active");
             loginForm.style.display = "flex";
@@ -129,6 +160,7 @@ document.addEventListener("DOMContentLoaded", () => {
         });
 
         tabSignupBtn.addEventListener("click", () => {
+            clearAuthError();
             tabSignupBtn.classList.add("active");
             tabLoginBtn.classList.remove("active");
             signupForm.style.display = "flex";
@@ -136,10 +168,11 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // Login Submit
+    // Login Submit Handler
     if (loginForm) {
         loginForm.addEventListener("submit", async (e) => {
             e.preventDefault();
+            clearAuthError();
             const email = document.getElementById("loginEmail").value.trim();
             const p = document.getElementById("loginPassword").value.trim();
             try {
@@ -154,23 +187,28 @@ document.addEventListener("DOMContentLoaded", () => {
                     await checkAuthStatus();
                     loadChatHistory();
                 } else {
-                    alert(data.error || "Login failed");
+                    showAuthError(data.error || "Invalid login credentials");
                 }
             } catch (err) {
-                alert("Login error");
+                showAuthError("Login failed. Please try again.");
             }
         });
     }
 
-    // Signup Submit
+    // Signup Submit Handler
     if (signupForm) {
         signupForm.addEventListener("submit", async (e) => {
             e.preventDefault();
+            clearAuthError();
             const name = document.getElementById("signupName").value.trim();
             const email = document.getElementById("signupEmail").value.trim();
             const u = document.getElementById("signupUsername").value.trim();
             const p = document.getElementById("signupPassword").value.trim();
-            if (!email) { alert("Email is required"); return; }
+
+            if (!email) { showAuthError("Email address is required"); return; }
+            if (!u) { showAuthError("Username is required"); return; }
+            if (!p) { showAuthError("Password is required"); return; }
+
             try {
                 const res = await fetch("/api/signup", {
                     method: "POST",
@@ -183,10 +221,10 @@ document.addEventListener("DOMContentLoaded", () => {
                     await checkAuthStatus();
                     loadChatHistory();
                 } else {
-                    alert(data.error || "Signup failed");
+                    showAuthError(data.error || "Registration failed. Try a different username/email.");
                 }
             } catch (err) {
-                alert("Signup error");
+                showAuthError("Registration error. Please check your connection.");
             }
         });
     }
