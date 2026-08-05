@@ -27,11 +27,18 @@ def init_db():
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             username TEXT UNIQUE NOT NULL,
+            email TEXT UNIQUE,
             password_hash TEXT NOT NULL,
             display_name TEXT,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
     """)
+
+    # Migrate: add email column if not exists
+    cursor.execute("PRAGMA table_info(users)")
+    user_cols = [row["name"] for row in cursor.fetchall()]
+    if "email" not in user_cols:
+        cursor.execute("ALTER TABLE users ADD COLUMN email TEXT")
 
     # 2. Chat History Table
     cursor.execute("""
@@ -75,10 +82,13 @@ def init_db():
 
 # --- AUTHENTICATION HELPERS ---
 
-def register_user(username: str, password: str, display_name: str = None) -> dict:
+def register_user(username: str, password: str, display_name: str = None, email: str = None) -> dict:
     username = username.strip().lower()
+    email = email.strip().lower() if email else None
     if not username or not password:
         return {"success": False, "error": "Username and password required"}
+    if not email:
+        return {"success": False, "error": "Email is required"}
 
     password_hash = generate_password_hash(password)
     display_name = display_name or username.capitalize()
@@ -87,26 +97,33 @@ def register_user(username: str, password: str, display_name: str = None) -> dic
     cursor = conn.cursor()
     try:
         cursor.execute(
-            "INSERT INTO users (username, password_hash, display_name) VALUES (?, ?, ?)",
-            (username, password_hash, display_name)
+            "INSERT INTO users (username, email, password_hash, display_name) VALUES (?, ?, ?, ?)",
+            (username, email, password_hash, display_name)
         )
         conn.commit()
         user_id = cursor.lastrowid
         conn.close()
         return {
             "success": True,
-            "user": {"id": user_id, "username": username, "display_name": display_name}
+            "user": {"id": user_id, "username": username, "email": email, "display_name": display_name}
         }
-    except sqlite3.IntegrityError:
+    except sqlite3.IntegrityError as e:
         conn.close()
+        if "email" in str(e):
+            return {"success": False, "error": "Email already registered. Please login."}
         return {"success": False, "error": "Username already exists. Please login."}
 
 
-def authenticate_user(username: str, password: str) -> dict:
-    username = username.strip().lower()
+def authenticate_user(login_id: str, password: str) -> dict:
+    """Login via email OR username."""
+    login_id = login_id.strip().lower()
     conn = get_db()
     cursor = conn.cursor()
-    cursor.execute("SELECT id, username, password_hash, display_name FROM users WHERE username = ?", (username,))
+    # Try email first, then username
+    cursor.execute(
+        "SELECT id, username, email, password_hash, display_name FROM users WHERE email = ? OR username = ?",
+        (login_id, login_id)
+    )
     user = cursor.fetchone()
     conn.close()
 
@@ -116,10 +133,11 @@ def authenticate_user(username: str, password: str) -> dict:
             "user": {
                 "id": user["id"],
                 "username": user["username"],
+                "email": user["email"],
                 "display_name": user["display_name"]
             }
         }
-    return {"success": False, "error": "Invalid username or password"}
+    return {"success": False, "error": "Invalid email/username or password"}
 
 
 # --- CHAT & MEMORY HELPERS ---

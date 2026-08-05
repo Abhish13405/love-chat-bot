@@ -140,13 +140,13 @@ document.addEventListener("DOMContentLoaded", () => {
     if (loginForm) {
         loginForm.addEventListener("submit", async (e) => {
             e.preventDefault();
-            const u = document.getElementById("loginUsername").value.trim();
+            const email = document.getElementById("loginEmail").value.trim();
             const p = document.getElementById("loginPassword").value.trim();
             try {
                 const res = await fetch("/api/login", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ username: u, password: p })
+                    body: JSON.stringify({ username: email, password: p })
                 });
                 const data = await res.json();
                 if (data.status === "success") {
@@ -167,13 +167,15 @@ document.addEventListener("DOMContentLoaded", () => {
         signupForm.addEventListener("submit", async (e) => {
             e.preventDefault();
             const name = document.getElementById("signupName").value.trim();
+            const email = document.getElementById("signupEmail").value.trim();
             const u = document.getElementById("signupUsername").value.trim();
             const p = document.getElementById("signupPassword").value.trim();
+            if (!email) { alert("Email is required"); return; }
             try {
                 const res = await fetch("/api/signup", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ display_name: name, username: u, password: p })
+                    body: JSON.stringify({ display_name: name, email: email, username: u, password: p })
                 });
                 const data = await res.json();
                 if (data.status === "success") {

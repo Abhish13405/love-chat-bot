@@ -42,12 +42,14 @@ def signup():
         username = data.get("username", "")
         password = data.get("password", "")
         display_name = data.get("display_name", "")
+        email = data.get("email", "")
 
-        result = register_user(username, password, display_name)
+        result = register_user(username, password, display_name, email)
         if result["success"]:
             session["user_id"] = result["user"]["id"]
             session["username"] = result["user"]["username"]
             session["display_name"] = result["user"]["display_name"]
+            session["email"] = result["user"].get("email", "")
             return jsonify({"status": "success", "user": result["user"]})
         return jsonify({"status": "error", "error": result["error"]}), 400
     except Exception as e:
