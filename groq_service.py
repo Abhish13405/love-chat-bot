@@ -84,10 +84,10 @@ def generate_companion_response(user_id: int, companion_id: str, user_message: s
             completion = openai_client.chat.completions.create(
                 messages=messages,
                 model="gpt-4o-mini",
-                temperature=0.8,
+                temperature=0.95,
                 max_tokens=100,
-                presence_penalty=0.7,
-                frequency_penalty=0.7
+                presence_penalty=0.8,
+                frequency_penalty=0.8
             )
             reply = clean_bot_cliches(completion.choices[0].message.content)
             save_message(user_id, companion_id, "assistant", reply)
@@ -107,10 +107,10 @@ def generate_companion_response(user_id: int, companion_id: str, user_message: s
             completion = groq_client.chat.completions.create(
                 messages=messages,
                 model="llama-3.3-70b-versatile",
-                temperature=0.8,
+                temperature=0.95,
                 max_tokens=100,
-                presence_penalty=0.7,
-                frequency_penalty=0.7
+                presence_penalty=0.8,
+                frequency_penalty=0.8
             )
             reply = clean_bot_cliches(completion.choices[0].message.content)
             save_message(user_id, companion_id, "assistant", reply)

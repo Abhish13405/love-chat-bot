@@ -96,38 +96,118 @@ def get_companion_prompt(companion_id: str) -> str:
     return companion["prompt"]
 
 
+import random
+
+# Cache to prevent immediate repetition of fallback replies
+RECENT_FALLBACKS = []
+
 def get_smart_fallback_reply(user_message: str, gender: str) -> str:
-    """Smart intent matcher for fallback mode when Groq API is offline."""
+    """Smart intent matcher with multiple random variations to prevent repetition."""
+    global RECENT_FALLBACKS
     msg = user_message.lower().strip()
-
-    if any(k in msg for k in ["name", "naam"]):
+    
+    pools = []
+    
+    if any(k in msg for k in ["name", "naam", "kon ho"]):
         if gender == "female":
-            return "mera naam Ananya h... aapki romantic girlfriend 💖 tm batao jaan?"
-        return "mera naam Kabir h bro 👊 tu bata tera naam kya h"
+            pools = [
+                "mera naam Ananya h... aapki romantic girlfriend 💖 tm batao jaan?",
+                "Ananya hu main... aapki dost ✨ aapka naam kya h?",
+                "Ananya bulate hain mujhe log 🌸 aap batao aapka shubh naam?"
+            ]
+        else:
+            pools = [
+                "mera naam Kabir h bro 👊 tu bata tera naam kya h",
+                "Kabir bol rha hu bhai! aur tum?",
+                "bhai log Kabir kehte hain mujhe 👊 tu bata?"
+            ]
 
-    if any(k in msg for k in ["krte", "karti", "kr rhi", "kr rha", "doing", "work", "job", "padhte"]):
+    elif any(k in msg for k in ["krte", "karti", "kr rhi", "kr rha", "doing", "work", "job", "padhte"]):
         if gender == "female":
-            return "bs abhi toh aapke baare me soch rhi hu ☕ tm batao jaan kya kr rhe?"
-        return "bs abhi chill kar rha hu... tu bata kya chal rha"
+            pools = [
+                "bs abhi toh aapke baare me soch rhi hu ☕ tm batao jaan kya kr rhe?",
+                "kuch khas nhi, bs music sun rhi thi 🎵 aap batao?",
+                "bs abhi thoda free hui toh aapka msg dekha... aap kya kar rhe ho? 🌸"
+            ]
+        else:
+            pools = [
+                "bs abhi chill kar rha hu... tu bata kya chal rha",
+                "kuch nhi bhai, doston ke saath baitha hu 👊",
+                "study kar rha tha thoda sa, abhi break liya h. tu bol?"
+            ]
 
-    if msg in ["hi", "hlo", "hey", "hello", "hiii", "heyy"]:
+    elif any(k in msg for k in ["hi", "hlo", "hey", "hello", "hiii", "heyy", "yo"]):
         if gender == "female":
-            return "heyy jaan! kaise ho aap? bohot yaad aa rhi thi 🌸"
-        return "hey bro! kya scene h 👊"
+            pools = [
+                "heyy jaan! kaise ho aap? bohot yaad aa rhi thi 🌸",
+                "hello hello! kaise ho? aaj ka din kaisa rha? ✨",
+                "heyy! finally msg kiya aapne 🙈 sab thik?"
+            ]
+        else:
+            pools = [
+                "hey bro! kya scene h 👊",
+                "yo bro! kaisa h?",
+                "hello bhai! bol kya chal rha?"
+            ]
 
-    if any(k in msg for k in ["kaise", "kaisa", "how are"]):
+    elif any(k in msg for k in ["kaise", "kaisa", "how are", "how r u"]):
         if gender == "female":
-            return "aap se baat karke ekdum badhiya! tm batao jaan aaj ka din kaisa raha 🙈"
-        return "ekdum mast bhai! tu bata kaisa h"
+            pools = [
+                "aap se baat karke ekdum badhiya! tm batao jaan aaj ka din kaisa raha 🙈",
+                "main toh ekdum mast hu! aap batao kaise ho? 🌸",
+                "ekdum fit and fine! aap sunao, kya chal rha h aaj kal?"
+            ]
+        else:
+            pools = [
+                "ekdum mast bhai! tu bata kaisa h",
+                "badhiya hu bro, tu bata tera kya scene h",
+                "chal rha h bro bas... tu bata, sab khairiyat?"
+            ]
 
-    if any(k in msg for k in ["love", "pyaar", "pyar", "like"]):
+    elif any(k in msg for k in ["love", "pyaar", "pyar", "like", "cute"]):
         if gender == "female":
-            return "bohot sara pyaar... 💖 aap mere sabse khas ho jaan! 🙈"
-        return "bhai tu mera sachha yaar h 👊"
+            pools = [
+                "bohot sara pyaar... 💖 aap mere sabse khas ho jaan! 🙈",
+                "aww... touchwood! main bhi aapse bohot pyaar karti hu 🥺💖",
+                "itna pyaar? cheeks lal ho jayenge mere 🙈"
+            ]
+        else:
+            pools = [
+                "bhai tu mera sachha yaar h 👊",
+                "full respect bro! tu dil ke bohot saaf h 👊",
+                "bhai tu bhai h mera, hamesha sath hu! 👊"
+            ]
 
-    if gender == "female":
-        return "main hamesha aapke saath hu jaan 💖 batao kya kehna chahte ho?"
-    return "sahi h bro! tu bata aur kya chal rha 👊"
+    # Default pool if no keywords match
+    if not pools:
+        if gender == "female":
+            pools = [
+                "main hamesha aapke saath hu jaan 💖 batao kya kehna chahte ho?",
+                "achha aisa? aur batao kya khas hua aaj ☕",
+                "suno na... mujhe thoda aur batao iske baare me 🌸",
+                "hmm, main sun rhi hu... aage bolo? ✨"
+            ]
+        else:
+            pools = [
+                "sahi h bro! tu bata aur kya chal rha 👊",
+                "haan bhai, aage bol kya hua",
+                "sahi keh rha h... fir aage kya hua? 👊",
+                "acha... aur baki sab badhiya?"
+            ]
+
+    # Filter out recent replies to prevent repetition
+    choices = [p for p in pools if p not in RECENT_FALLBACKS]
+    if not choices:
+        choices = pools
+
+    reply = random.choice(choices)
+    
+    # Update cache
+    RECENT_FALLBACKS.append(reply)
+    if len(RECENT_FALLBACKS) > 5:
+        RECENT_FALLBACKS.pop(0)
+        
+    return reply
 
 
 def clean_bot_cliches(text: str) -> str:
