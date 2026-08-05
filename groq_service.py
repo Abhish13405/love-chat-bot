@@ -1,15 +1,13 @@
 """
 AI Service Router for Saathi Companion.
-Routes incoming chat messages through NLP Analysis, Memory DB, 
-and 100% Offline Local AI Engine (or optional Cloud API if configured).
+Routes chat messages through Groq LLM API with smart fallback.
 """
 
 import os
 from dotenv import load_dotenv
-from persona_dataset import COMPANION_PERSONAS, clean_bot_cliches
-from memory_db import get_recent_history, get_all_memories, save_message, set_memory_fact
+from persona_dataset import COMPANION_PERSONAS, clean_bot_cliches, get_smart_fallback_reply
+from memory_db import get_recent_history, save_message, set_memory_fact
 from nlp_engine import analyze_user_sentiment, extract_user_entities
-from local_ai_engine import get_local_companion_response
 
 load_dotenv()
 
@@ -73,20 +71,6 @@ def generate_companion_response(user_id: int, companion_id: str, user_message: s
     except Exception as e:
         print(f"Save message notice: {e}")
 
-    # 3.5 Hand-Written Keyword Interceptor (Priority check for custom responses)
-    import re
-    if re.search(r'\b(sex|sexual|sexy)\b', user_message.lower()):
-        reply = get_local_companion_response(user_message, companion_id)
-        try:
-            save_message(user_id, companion_id, "assistant", reply)
-        except Exception:
-            pass
-        return {
-            "response": reply,
-            "source": "handwritten_local",
-            "model": f"{companion_info['name']} Custom Response",
-            "emotion": dominant_emotion
-        }
 
     # 4. Optional OpenAI API Execution
     openai_client = get_openai_client(custom_api_key)
@@ -134,8 +118,8 @@ def generate_companion_response(user_id: int, companion_id: str, user_message: s
         except Exception as e:
             print(f"Groq notice: {e}")
 
-    # 6. 100% Offline Local Engine (Default)
-    reply = get_local_companion_response(user_message, companion_id)
+    # 6. Smart Fallback (Persona-aware keyword matching - no robotic responses)
+    reply = get_smart_fallback_reply(user_message, companion_info["gender"])
 
     try:
         save_message(user_id, companion_id, "assistant", reply)
@@ -144,7 +128,7 @@ def generate_companion_response(user_id: int, companion_id: str, user_message: s
 
     return {
         "response": reply,
-        "source": "local_offline",
-        "model": f"{companion_info['name']} Local Engine",
+        "source": "smart_fallback",
+        "model": f"{companion_info['name']} Offline Mode",
         "emotion": dominant_emotion
     }
