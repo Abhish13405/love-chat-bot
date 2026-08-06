@@ -76,6 +76,11 @@ def init_db():
         )
     """)
 
+    cursor.execute("PRAGMA table_info(user_memory)")
+    mem_cols = [row["name"] for row in cursor.fetchall()]
+    if "user_id" not in mem_cols:
+        cursor.execute("ALTER TABLE user_memory ADD COLUMN user_id INTEGER")
+
     conn.commit()
     conn.close()
 
@@ -194,10 +199,15 @@ def set_memory_fact(user_id: int, key: str, value: str):
         return
     conn = get_db()
     cursor = conn.cursor()
-    cursor.execute("""
-        INSERT INTO user_memory (user_id, key, value, updated_at) VALUES (?, ?, ?, CURRENT_TIMESTAMP)
-        ON CONFLICT(user_id, key) DO UPDATE SET value = excluded.value, updated_at = CURRENT_TIMESTAMP
-    """, (user_id, key, value))
+    try:
+        cursor.execute("""
+            INSERT INTO user_memory (user_id, key, value, updated_at) VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+            ON CONFLICT(user_id, key) DO UPDATE SET value = excluded.value, updated_at = CURRENT_TIMESTAMP
+        """, (user_id, key, value))
+    except Exception:
+        cursor.execute("""
+            INSERT OR REPLACE INTO user_memory (user_id, key, value, updated_at) VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+        """, (user_id, key, value))
     conn.commit()
     conn.close()
 

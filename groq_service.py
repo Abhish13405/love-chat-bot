@@ -6,7 +6,7 @@ Routes chat messages through Groq LLM API with smart fallback.
 import os
 from dotenv import load_dotenv
 from persona_dataset import COMPANION_PERSONAS, clean_bot_cliches, get_smart_fallback_reply
-from memory_db import get_recent_history, save_message, set_memory_fact
+from memory_db import get_recent_history, save_message, set_memory_fact, get_all_memories
 from nlp_engine import analyze_user_sentiment, extract_user_entities
 
 load_dotenv()
@@ -72,24 +72,53 @@ def generate_companion_response(user_id: int, companion_id: str, user_message: s
         print(f"Save message notice: {e}")
 
 
+    # Fetch recent history and memories to build LLM context
+    history = []
+    last_replies = []
+    user_memories = {}
+    try:
+        if user_id:
+            user_memories = get_all_memories(user_id)
+        history = get_recent_history(user_id, companion_id, limit=10)
+        last_replies = [msg["content"].strip() for msg in history if msg["role"] == "assistant"]
+    except Exception as e:
+        print(f"History load notice: {e}")
+
+    memory_str = ""
+    if user_memories:
+        facts = ", ".join([f"{k}: {v}" for k, v in user_memories.items()])
+        memory_str = f"\nThings you remember about the user: {facts}"
+
+    system_prompt = companion_info["prompt"] + memory_str + "\n\nIMPORTANT: Read the user's latest input carefully and answer their exact question/statement directly. Do not give evasive or off-topic responses."
+
     # 4. Optional OpenAI API Execution
     openai_client = get_openai_client(custom_api_key)
     if openai_client:
         try:
-            history = get_recent_history(user_id, companion_id, limit=10)
-            messages = [{"role": "system", "content": companion_info["prompt"]}]
+            messages = [{"role": "system", "content": system_prompt}]
             for msg in history:
                 messages.append({"role": msg["role"], "content": msg["content"]})
 
             completion = openai_client.chat.completions.create(
                 messages=messages,
                 model="gpt-4o-mini",
-                temperature=0.95,
-                max_tokens=100,
-                presence_penalty=0.8,
-                frequency_penalty=0.8
+                temperature=0.7,
+                max_tokens=150,
+                presence_penalty=0.1,
+                frequency_penalty=0.1
             )
             reply = clean_bot_cliches(completion.choices[0].message.content)
+            
+            # Avoid repeating the last response
+            if last_replies and reply.strip() in last_replies:
+                completion = openai_client.chat.completions.create(
+                    messages=messages,
+                    model="gpt-4o-mini",
+                    temperature=0.9,
+                    max_tokens=150
+                )
+                reply = clean_bot_cliches(completion.choices[0].message.content)
+
             save_message(user_id, companion_id, "assistant", reply)
             return {"response": reply, "source": "openai", "model": "gpt-4o-mini", "emotion": dominant_emotion}
         except Exception as e:
@@ -99,27 +128,37 @@ def generate_companion_response(user_id: int, companion_id: str, user_message: s
     groq_client = get_groq_client(custom_api_key)
     if groq_client:
         try:
-            history = get_recent_history(user_id, companion_id, limit=10)
-            messages = [{"role": "system", "content": companion_info["prompt"]}]
+            messages = [{"role": "system", "content": system_prompt}]
             for msg in history:
                 messages.append({"role": msg["role"], "content": msg["content"]})
 
             completion = groq_client.chat.completions.create(
                 messages=messages,
                 model="llama-3.3-70b-versatile",
-                temperature=0.95,
-                max_tokens=100,
-                presence_penalty=0.8,
-                frequency_penalty=0.8
+                temperature=0.7,
+                max_tokens=150,
+                presence_penalty=0.1,
+                frequency_penalty=0.1
             )
             reply = clean_bot_cliches(completion.choices[0].message.content)
+
+            # Avoid repeating the last response
+            if last_replies and reply.strip() in last_replies:
+                completion = groq_client.chat.completions.create(
+                    messages=messages,
+                    model="llama-3.3-70b-versatile",
+                    temperature=0.9,
+                    max_tokens=150
+                )
+                reply = clean_bot_cliches(completion.choices[0].message.content)
+
             save_message(user_id, companion_id, "assistant", reply)
             return {"response": reply, "source": "groq", "model": "llama-3.3-70b", "emotion": dominant_emotion}
         except Exception as e:
             print(f"Groq notice: {e}")
 
     # 6. Smart Fallback (Persona-aware keyword matching - no robotic responses)
-    reply = get_smart_fallback_reply(user_message, companion_info["gender"])
+    reply = get_smart_fallback_reply(user_message, companion_info["gender"], last_replies)
 
     try:
         save_message(user_id, companion_id, "assistant", reply)

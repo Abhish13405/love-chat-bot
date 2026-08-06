@@ -101,7 +101,7 @@ import random
 # Cache to prevent immediate repetition of fallback replies
 RECENT_FALLBACKS = []
 
-def get_smart_fallback_reply(user_message: str, gender: str) -> str:
+def get_smart_fallback_reply(user_message: str, gender: str, last_replies: list = None) -> str:
     """Smart intent matcher with multiple random variations to prevent repetition."""
     global RECENT_FALLBACKS
     msg = user_message.lower().strip()
@@ -178,6 +178,20 @@ def get_smart_fallback_reply(user_message: str, gender: str) -> str:
                 "bhai tu bhai h mera, hamesha sath hu! 👊"
             ]
 
+    elif any(k in msg for k in ["night", "sleep", "so ja", "neend", "gudnight", "gn", "bye", "bbye", "tata", "alvida", "chal"]):
+        if gender == "female":
+            pools = [
+                "good night jaan! sweet dreams... kal baat karte hain 🌙✨",
+                "so jao ab, bohot late ho gaya h... GN 💖",
+                "bye bye! apna dhyan rakhna... kal subah baat karte hain 🌸"
+            ]
+        else:
+            pools = [
+                "good night bhai! so ja ab 🌙",
+                "night bro! kal milte hain",
+                "bye bro, kal subah call karta hu 👊"
+            ]
+
     # Default pool if no keywords match
     if not pools:
         if gender == "female":
@@ -195,8 +209,9 @@ def get_smart_fallback_reply(user_message: str, gender: str) -> str:
                 "acha... aur baki sab badhiya?"
             ]
 
-    # Filter out recent replies to prevent repetition
-    choices = [p for p in pools if p not in RECENT_FALLBACKS]
+    # Filter out recent replies to prevent repetition (both session memory and database history)
+    exclude_set = set(RECENT_FALLBACKS + (last_replies or []))
+    choices = [p for p in pools if p not in exclude_set]
     if not choices:
         choices = pools
 
