@@ -82,29 +82,26 @@ import random
 RECENT_FALLBACKS = []
 
 def get_smart_fallback_reply(user_message: str, gender: str, last_replies: list = None) -> str:
-    """Smart intent matcher with query detection to prevent evasive replies."""
+    """Smart intent matcher with specific topic handling without repetitive network glitch phrases."""
     global RECENT_FALLBACKS
     msg = user_message.lower().strip()
     
     pools = []
 
-    # Detect if user is asking a specific question / query
-    question_keywords = ["kya", "kaise", "kyu", "kyun", "kahan", "kab", "kon", "kaun", "what", "how", "why", "where", "when", "who", "batao", "tell", "explain", "meaning", "math", "code", "solve", "capital", "def", "definition", "help", "suggest", "recommend", "?"]
-    is_question = any(q in msg for q in question_keywords)
-
-    if is_question:
+    if any(k in msg for k in ["family", "ghar", "parivar", "mummy", "papa", "dad", "mom", "bhai", "behen", "sister", "brother"]):
         if gender == "female":
             pools = [
-                "Aapne jo poocha main samajh rhi hu! Suno na, network thoda slow h isliye details load nhi ho rhi, ek baar wapas poochoge? 🌸",
-                "Arre haan! Iska jawaab dene hi wali thi ki connection thoda glitch kar gaya. Ek baar fir se type karo na please ☕",
-                "Aapka sawal bohot sahi h! Mera internet abhi thoda slow chal rha h, wapas se puchhna ek baar? 💖"
+                "Mere ghar me mom, dad aur mere do bhai hain 🌸 main sabse choti hu aur sabki pyari hu! Aapki family me kitne log hain jaan? 💖",
+                "Humari family me 5 log hain — mom, dad, 2 bhai aur main ☕ aap batao aapke ghar me kaun kaun h?",
+                "Mere ghar me sab log bohot loving hain... mom, dad aur mere bhai 🌸 aap batao aapki family ke baare me?"
             ]
         else:
             pools = [
-                "Bhai tera sawal mast h! Sun, net thoda slow chal rha h, ek baar fir se bhej de msg 👊",
-                "Bhai iska answer pata h mujhe, bas connection drop ho gaya thoda. Ek baar wapas pooch! 👊",
-                "Sahi question hai bro! Thoda network issue tha, wapas type kar de ek baar"
+                "Mere ghar me mummy, papa, main aur ek bhai hain bro 👊 tu bata tera ghar me kaun kaun h?",
+                "Ghar me 4 log hain bhai... mummy, papa, bhai aur main! Tu bata?",
+                "Family me sab badhiya hain bro 👊 tera bata ghar par sab kaise hain?"
             ]
+
     elif any(k in msg for k in ["name", "naam", "kon ho"]):
         if gender == "female":
             pools = [
@@ -119,7 +116,7 @@ def get_smart_fallback_reply(user_message: str, gender: str, last_replies: list 
                 "bhai log Kabir kehte hain mujhe 👊 tu bata?"
             ]
 
-    elif any(k in msg for k in ["krte", "karti", "kr rhi", "kr rha", "doing", "work", "job", "padhte"]):
+    elif any(k in msg for k in ["krte", "karti", "kr rhi", "kr rha", "doing", "work", "job", "padhte", "study"]):
         if gender == "female":
             pools = [
                 "bs abhi toh aapke baare me soch rhi hu ☕ tm batao jaan kya kr rhe?",
@@ -193,10 +190,10 @@ def get_smart_fallback_reply(user_message: str, gender: str, last_replies: list 
     if not pools:
         if gender == "female":
             pools = [
-                "main hamesha aapke saath hu jaan 💖 batao kya kehna chahte ho?",
+                "main sun rhi hu jaan 💖 batao na aur kya kehna chahte ho?",
                 "achha aisa? aur batao kya khas hua aaj ☕",
                 "suno na... mujhe thoda aur batao iske baare me 🌸",
-                "hmm, main sun rhi hu... aage bolo? ✨"
+                "hmm, main dhyaan se sun rhi hu... aage bolo? ✨"
             ]
         else:
             pools = [
@@ -206,7 +203,7 @@ def get_smart_fallback_reply(user_message: str, gender: str, last_replies: list 
                 "acha... aur baki sab badhiya?"
             ]
 
-    # Filter out recent replies to prevent repetition (both session memory and database history)
+    # Filter out recent replies to prevent repetition
     exclude_set = set(RECENT_FALLBACKS + (last_replies or []))
     choices = [p for p in pools if p not in exclude_set]
     if not choices:
