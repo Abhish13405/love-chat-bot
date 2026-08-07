@@ -89,7 +89,9 @@ def generate_companion_response(user_id: int, companion_id: str, user_message: s
         facts = ", ".join([f"{k}: {v}" for k, v in user_memories.items()])
         memory_str = f"\nThings you remember about the user: {facts}"
 
-    system_prompt = companion_info["prompt"] + memory_str + "\n\nCRITICAL INSTRUCTION: Read the user's latest input carefully. If the user asks a question, requests information, or asks for advice, give a clear, accurate, direct, and complete answer in your companion tone. Do NOT ignore their question or give generic evasive responses."
+    emotion_str = f"\nUser's Detected Emotional State/Mood: {dominant_emotion.upper()}"
+
+    system_prompt = companion_info["prompt"] + memory_str + emotion_str + "\n\nCRITICAL INSTRUCTION: Read the user's latest input carefully and understand his feelings. Respond with deep empathy, emotional intelligence, warmth, and care. If the user asks a question or request, give a clear, accurate, and direct answer in your sweet companion tone."
 
     # 4. Optional OpenAI API Execution
     openai_client = get_openai_client(custom_api_key)
