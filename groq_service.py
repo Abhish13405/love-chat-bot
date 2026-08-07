@@ -89,7 +89,7 @@ def generate_companion_response(user_id: int, companion_id: str, user_message: s
         facts = ", ".join([f"{k}: {v}" for k, v in user_memories.items()])
         memory_str = f"\nThings you remember about the user: {facts}"
 
-    system_prompt = companion_info["prompt"] + memory_str + "\n\nIMPORTANT: Read the user's latest input carefully and answer their exact question/statement directly. Do not give evasive or off-topic responses."
+    system_prompt = companion_info["prompt"] + memory_str + "\n\nCRITICAL INSTRUCTION: Read the user's latest input carefully. If the user asks a question, requests information, or asks for advice, give a clear, accurate, direct, and complete answer in your companion tone. Do NOT ignore their question or give generic evasive responses."
 
     # 4. Optional OpenAI API Execution
     openai_client = get_openai_client(custom_api_key)
@@ -103,7 +103,7 @@ def generate_companion_response(user_id: int, companion_id: str, user_message: s
                 messages=messages,
                 model="gpt-4o-mini",
                 temperature=0.7,
-                max_tokens=150,
+                max_tokens=500,
                 presence_penalty=0.1,
                 frequency_penalty=0.1
             )
@@ -115,7 +115,7 @@ def generate_companion_response(user_id: int, companion_id: str, user_message: s
                     messages=messages,
                     model="gpt-4o-mini",
                     temperature=0.9,
-                    max_tokens=150
+                    max_tokens=500
                 )
                 reply = clean_bot_cliches(completion.choices[0].message.content)
 
@@ -124,38 +124,45 @@ def generate_companion_response(user_id: int, companion_id: str, user_message: s
         except Exception as e:
             print(f"OpenAI notice: {e}")
 
-    # 5. Optional Groq API Execution
+    # 5. Optional Groq API Execution with Model Fallback Sequence
     groq_client = get_groq_client(custom_api_key)
     if groq_client:
-        try:
-            messages = [{"role": "system", "content": system_prompt}]
-            for msg in history:
-                messages.append({"role": msg["role"], "content": msg["content"]})
+        groq_models = [
+            "llama-3.3-70b-versatile",
+            "llama-3.1-8b-instant",
+            "mixtral-8x7b-32768",
+            "gemma2-9b-it"
+        ]
+        messages = [{"role": "system", "content": system_prompt}]
+        for msg in history:
+            messages.append({"role": msg["role"], "content": msg["content"]})
 
-            completion = groq_client.chat.completions.create(
-                messages=messages,
-                model="llama-3.3-70b-versatile",
-                temperature=0.7,
-                max_tokens=150,
-                presence_penalty=0.1,
-                frequency_penalty=0.1
-            )
-            reply = clean_bot_cliches(completion.choices[0].message.content)
-
-            # Avoid repeating the last response
-            if last_replies and reply.strip() in last_replies:
+        for target_model in groq_models:
+            try:
                 completion = groq_client.chat.completions.create(
                     messages=messages,
-                    model="llama-3.3-70b-versatile",
-                    temperature=0.9,
-                    max_tokens=150
+                    model=target_model,
+                    temperature=0.7,
+                    max_tokens=500,
+                    presence_penalty=0.1,
+                    frequency_penalty=0.1
                 )
                 reply = clean_bot_cliches(completion.choices[0].message.content)
 
-            save_message(user_id, companion_id, "assistant", reply)
-            return {"response": reply, "source": "groq", "model": "llama-3.3-70b", "emotion": dominant_emotion}
-        except Exception as e:
-            print(f"Groq notice: {e}")
+                if last_replies and reply.strip() in last_replies:
+                    completion = groq_client.chat.completions.create(
+                        messages=messages,
+                        model=target_model,
+                        temperature=0.9,
+                        max_tokens=500
+                    )
+                    reply = clean_bot_cliches(completion.choices[0].message.content)
+
+                save_message(user_id, companion_id, "assistant", reply)
+                return {"response": reply, "source": "groq", "model": target_model, "emotion": dominant_emotion}
+            except Exception as e:
+                print(f"Groq model {target_model} notice: {e}")
+                continue
 
     # 6. Smart Fallback (Persona-aware keyword matching - no robotic responses)
     reply = get_smart_fallback_reply(user_message, companion_info["gender"], last_replies)

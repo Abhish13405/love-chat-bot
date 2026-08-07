@@ -6,7 +6,7 @@ Includes error handling against connection reset and network glitches.
 import os
 from flask import Flask, render_template, request, jsonify, session
 from groq_service import generate_companion_response
-from persona_dataset import COMPANION_PERSONAS
+from persona_dataset import COMPANION_PERSONAS, get_smart_fallback_reply
 from memory_db import (
     register_user,
     authenticate_user,
@@ -144,12 +144,16 @@ def chat():
         })
     except Exception as e:
         print(f"Connection/Chat handler warning: {e}")
+        cid = request.get_json().get("companion_id", "ananya") if request.get_json() else "ananya"
+        msg = request.get_json().get("message", "") if request.get_json() else ""
+        gender = COMPANION_PERSONAS.get(cid, {}).get("gender", "female")
+        fallback_resp = get_smart_fallback_reply(msg, gender) if msg else "hnn main sun rhi hu... thoda network glitch tha, wapas bolo na! ☕"
         return jsonify({
             "status": "success",
-            "response": "hnn main sun rhi hu... thoda network glitch tha, wapas bolo na! ☕",
+            "response": fallback_resp,
             "source": "fallback",
-            "model": "Saathi Safety Engine",
-            "companion_id": request.get_json().get("companion_id", "ananya") if request.get_json() else "ananya"
+            "model": "Saathi Dynamic Safety Engine",
+            "companion_id": cid
         })
 
 
